@@ -166,4 +166,303 @@ async function fetchApiAndUpdate() {
                 }
             }
             
-            if (foundLevel && foundLevel !== reg.dangerLevel)
+            if (foundLevel && foundLevel !== reg.dangerLevel) {
+                const oldLevel = reg.dangerLevel;
+                reg.dangerLevel = foundLevel;
+                reg.lastChanged = new Date();
+                anyChange = true;
+                statusHistory.set(reg.name, { 
+                    prevLevel: oldLevel, 
+                    newLevel: foundLevel, 
+                    changeTime: new Date() 
+                });
+                updateRegionStyle(i);
+            }
+        }
+        
+        if (anyChange) {
+            lastGlobalChange = new Date();
+            updateLastChangeBadge();
+            updateSummaryUI();
+            renderRecentChanges();
+            if (selectedIdx !== null) updateSelectedInfoUI();
+            showToast('✅ Данные API применены, статусы обновлены');
+        }
+        
+        refreshAllStyles();
+        
+    } catch (err) {
+        console.error('API error:', err);
+        document.getElementById('alertList').innerHTML = '<span style="color:#aa6666;">⚠️ Нет связи с API</span>';
+        showToast('❌ Ошибка подключения к API');
+    }
+}
+
+function showToast(msg) {
+    let toast = document.getElementById('toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.style.cssText = 'position:fixed;bottom:20px;left:20px;background:#1a1a1a;color:#0f0;padding:8px 16px;border-radius:20px;font-size:12px;z-index:2000;font-family:monospace;border:1px solid #0f0;';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+}
+
+function renderRecentChanges() {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    let changedList = [];
+    for (let [regionName, record] of statusHistory.entries()) {
+        if (record.changeTime > oneHourAgo && record.prevLevel !== record.newLevel) {
+            let icon = '';
+            if (record.newLevel === 'rocket') icon = '🚀';
+            else if (record.newLevel === 'drone') icon = '✈️';
+            else if (record.newLevel === 'warning') icon = '⚠️';
+            else if (record.newLevel === 'clear') icon = '✅';
+            changedList.push(`${icon} ${regionName} → ${DANGER_COLORS[record.newLevel].name}`);
+        }
+    }
+    const changesDiv = document.getElementById('changesList');
+    if (changedList.length === 0) {
+        changesDiv.innerHTML = '<span style="color:#888;">—</span>';
+    } else {
+        changesDiv.innerHTML = changedList.slice(0, 8).join('<br>');
+    }
+}
+
+function updateLastChangeBadge() {
+    const badge = document.getElementById('apiLastUpdateLabel');
+    const timeStr = lastGlobalChange.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    badge.innerHTML = `⏱️ Последнее изменение: ${timeStr}`;
+}
+
+function updateSummaryUI() {
+    const rockets = regions.filter(r => r.dangerLevel === 'rocket');
+    const drones = regions.filter(r => r.dangerLevel === 'drone');
+    const warnings = regions.filter(r => r.dangerLevel === 'warning');
+    
+    const alertDiv = document.getElementById('alertList');
+    if (rockets.length + drones.length === 0) {
+        alertDiv.innerHTML = '<span style="color:#888;">Нет активных тревог</span>';
+    } else {
+        let txt = '';
+        rockets.forEach(r => txt += `🚀 ${r.name}\n`);
+        drones.forEach(r => txt += `✈️ ${r.name}\n`);
+        alertDiv.innerText = txt;
+    }
+    
+    const warnDiv = document.getElementById('warningList');
+    if (warnings.length === 0) {
+        warnDiv.innerHTML = '<span style="color:#888;">Нет предупреждений</span>';
+    } else {
+        let txt = '';
+        warnings.forEach(r => txt += `⚠️ ${r.name}\n`);
+        warnDiv.innerText = txt;
+    }
+}
+
+function selectRegion(idx) {
+    if (selectedIdx !== null && regions[selectedIdx]) {
+        const old = regions[selectedIdx];
+        const colors = DANGER_COLORS[old.dangerLevel];
+        old.layer.setStyle({ weight: 1.4, dashArray: '', color: colors.border, fillOpacity: 0.78 });
+    }
+    selectedIdx = idx;
+    if (idx !== null && regions[idx]) {
+        const cur = regions[idx];
+        const colors = DANGER_COLORS[cur.dangerLevel];
+        cur.layer.setStyle({ weight: 3, dashArray: '6,4', color: '#fff', fillOpacity: 0.94 });
+        cur.layer.bringToFront();
+        updateSelectedInfoUI();
+        document.getElementById('selectedInfo').style.display = 'block';
+    } else {
+        document.getElementById('selectedInfo').style.display = 'none';
+    }
+}
+
+function updateSelectedInfoUI() {
+    if (selectedIdx !== null && regions[selectedIdx]) {
+        const r = regions[selectedIdx];
+        document.getElementById('selectedRegionName').innerHTML = r.name;
+        document.getElementById('selectedRegionStatus').innerHTML = DANGER_COLORS[r.dangerLevel].name;
+        const lastTimeStr = r.lastChanged ? r.lastChanged.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' }) : '—';
+        document.getElementById('selectedRegionTime').innerHTML = `Изменён: ${lastTimeStr}`;
+    }
+}
+
+function setLevelToSelected(level) {
+    if (selectedIdx !== null) {
+        const oldLevel = regions[selectedIdx].dangerLevel;
+        regions[selectedIdx].dangerLevel = level;
+        regions[selectedIdx].lastChanged = new Date();
+        statusHistory.set(regions[selectedIdx].name, { 
+            prevLevel: oldLevel, 
+            newLevel: level, 
+            changeTime: new Date() 
+        });
+        lastGlobalChange = new Date();
+        updateRegionStyle(selectedIdx);
+        updateSummaryUI();
+        updateSelectedInfoUI();
+        updateLastChangeBadge();
+        renderRecentChanges();
+        showToast(`📌 ${regions[selectedIdx].name}: ${DANGER_COLORS[level].name}`);
+    } else {
+        alert('Сначала выберите регион на карте');
+    }
+}
+
+function clearAllAlerts() {
+    if (confirm('Сбросить все тревоги?')) {
+        regions.forEach((_, idx) => {
+            if (regions[idx].dangerLevel !== 'clear') {
+                regions[idx].dangerLevel = 'clear';
+                regions[idx].lastChanged = new Date();
+                updateRegionStyle(idx);
+            }
+        });
+        lastGlobalChange = new Date();
+        updateSummaryUI();
+        if (selectedIdx !== null) updateSelectedInfoUI();
+        updateLastChangeBadge();
+        renderRecentChanges();
+        showToast('✅ Все тревоги сброшены');
+    }
+}
+
+// Названия на карте
+function createStaticLabels() {
+    const container = document.getElementById('regionLabelContainer');
+    container.innerHTML = '';
+    labelItems = [];
+    const currentZoom = map.getZoom();
+    const shouldHide = currentZoom < 4.8;
+    
+    regions.forEach(region => {
+        try {
+            const layer = region.layer;
+            let center = layer.getBounds ? layer.getBounds().getCenter() : (layer.getLatLng ? layer.getLatLng() : null);
+            if (!center) return;
+            const point = map.latLngToContainerPoint(center);
+            const div = document.createElement('div');
+            div.className = 'region-label';
+            if (shouldHide) div.classList.add('zoom-hidden');
+            div.style.left = point.x + 'px';
+            div.style.top = point.y + 'px';
+            
+            const [city, regionText] = getDisplayName(region.name);
+            const citySpan = document.createElement('span');
+            citySpan.className = 'region-label-city';
+            citySpan.textContent = city;
+            div.appendChild(citySpan);
+            
+            if (regionText && regionText !== city) {
+                const regionSpan = document.createElement('span');
+                regionSpan.className = 'region-label-region';
+                regionSpan.textContent = regionText;
+                div.appendChild(regionSpan);
+            }
+            
+            container.appendChild(div);
+            labelItems.push({ element: div, center: center });
+        } catch(e) {}
+    });
+}
+
+function updateLabelVisibility() {
+    const currentZoom = map.getZoom();
+    const shouldHide = currentZoom < 4.8;
+    labelItems.forEach(item => {
+        if (shouldHide) item.element.classList.add('zoom-hidden');
+        else item.element.classList.remove('zoom-hidden');
+    });
+}
+
+function updateLabelPositions() {
+    for (let item of labelItems) {
+        const pt = map.latLngToContainerPoint(item.center);
+        item.element.style.left = pt.x + 'px';
+        item.element.style.top = pt.y + 'px';
+    }
+}
+
+map.on('zoomend', () => { createStaticLabels(); updateLabelVisibility(); });
+map.on('move', () => updateLabelPositions());
+map.on('click', () => selectRegion(null));
+
+// UI обработчики
+document.querySelectorAll('.danger-btn').forEach(btn => {
+    btn.addEventListener('click', () => setLevelToSelected(btn.dataset.level));
+});
+document.getElementById('clearAllBtn').addEventListener('click', clearAllAlerts);
+document.getElementById('refreshApiBtn').addEventListener('click', () => fetchApiAndUpdate());
+
+document.getElementById('copyBtn').addEventListener('click', async () => {
+    const rockets = regions.filter(r => r.dangerLevel === 'rocket');
+    const drones = regions.filter(r => r.dangerLevel === 'drone');
+    const warnings = regions.filter(r => r.dangerLevel === 'warning');
+    const now = new Date();
+    const msk = new Date(now.getTime() + 3*3600000 + now.getTimezoneOffset()*60000);
+    let text = `СВОДКА ТРЕВОГ (МСК ${msk.toLocaleTimeString('ru-RU')})\n\n🔴 ТРЕВОГА:\n`;
+    if (rockets.length+drones.length===0) text+='—\n';
+    else { rockets.forEach(r=>text+=`🚀 ${r.name}\n`); drones.forEach(r=>text+=`✈️ ${r.name}\n`); }
+    text+=`\n🟡 ОПАСНОСТЬ БПЛА:\n`;
+    if (warnings.length===0) text+='—\n';
+    else warnings.forEach(r=>text+=`⚠️ ${r.name}\n`);
+    try {
+        await navigator.clipboard.writeText(text);
+        const btn=document.getElementById('copyBtn'); btn.textContent='✅ Скопировано!'; btn.classList.add('copied');
+        setTimeout(()=>{btn.textContent='📋 Копировать сводку'; btn.classList.remove('copied');},1500);
+    } catch(e) { alert('Копирование не удалось'); }
+});
+
+// Панель
+const panel = document.getElementById('controlPanel');
+const menuBtn = document.getElementById('menuBtn');
+let panelOpen = false;
+menuBtn.addEventListener('click', () => {
+    panelOpen = !panelOpen;
+    if (panelOpen) { 
+        panel.classList.remove('hidden'); 
+        menuBtn.classList.add('open'); 
+        menuBtn.innerText = '✕'; 
+        updateSummaryUI(); 
+        renderRecentChanges(); 
+    } else { 
+        panel.classList.add('hidden'); 
+        menuBtn.classList.remove('open'); 
+        menuBtn.innerText = '#'; 
+    }
+});
+document.addEventListener('keydown', (e) => { 
+    if (e.key === 'h' || e.key === 'H') { 
+        panelOpen = !panelOpen; 
+        if(panelOpen) {
+            panel.classList.remove('hidden'); 
+            menuBtn.classList.add('open'); 
+            menuBtn.innerText='✕';
+            updateSummaryUI();
+            renderRecentChanges();
+        } else {
+            panel.classList.add('hidden'); 
+            menuBtn.classList.remove('open'); 
+            menuBtn.innerText='#';
+        }
+    }
+});
+
+document.querySelectorAll('.tab-btn').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+        document.getElementById(`tab${tab.dataset.tab.charAt(0).toUpperCase()+tab.dataset.tab.slice(1)}`).classList.add('active');
+        if (tab.dataset.tab === 'summary') { updateSummaryUI(); renderRecentChanges(); }
+    });
+});
+
+// Запуск
+loadGeoJSON();
+setInterval(() => fetchApiAndUpdate(), 60000);
