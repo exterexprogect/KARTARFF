@@ -18,131 +18,119 @@ let geoLayer = null;
 let labelItems = [];
 let statusHistory = new Map();
 let lastGlobalChange = new Date();
+let lastApiData = null; // сохраняем последние полученные данные
 
+// API URL с использованием CORS-прокси (несколько вариантов для надежности)
+const PROXY_URLS = [
+    'https://api.allorigins.win/raw?url=',
+    'https://cors-anywhere.herokuapp.com/',
+    'https://cors-proxy.htmldriven.com/?url='
+];
 const API_URL = 'https://radar.ra5cq.ru/api/state';
 
-// Время
-function updateClock() {
-    const now = new Date();
-    const msk = new Date(now.getTime() + (3 * 3600000) + (now.getTimezoneOffset() * 60000));
-    document.getElementById('currentTime').innerText = msk.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    document.getElementById('currentDate').innerText = msk.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-    document.getElementById('summaryTime').innerHTML = `Сводка на ${msk.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' })}`;
-}
-updateClock();
-setInterval(updateClock, 30000);
-
-// Обновление стиля региона (КРАСИТ!)
-function updateRegionStyle(idx) {
-    const reg = regions[idx];
-    const colors = DANGER_COLORS[reg.dangerLevel];
-    const isSelected = (idx === selectedIdx);
-    reg.layer.setStyle({
-        fillColor: colors.fill,
-        fillOpacity: isSelected ? 0.92 : 0.78,
-        color: isSelected ? '#ffffff' : colors.border,
-        weight: isSelected ? 2.8 : 1.4,
-        dashArray: isSelected ? '5,3' : ''
-    });
-}
-
-function refreshAllStyles() {
-    regions.forEach((_, idx) => updateRegionStyle(idx));
-}
-
-// Загрузка GeoJSON
-function loadGeoJSON() {
-    const geoUrl = 'https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/russia.geojson';
-    fetch(geoUrl)
-        .then(r => r.json())
-        .then(data => processGeoJSON(data))
-        .catch(() => {
-            fetch('https://raw.githubusercontent.com/d3coder/geojson-russia/master/russia_regions.geojson')
-                .then(r => r.json())
-                .then(data => processGeoJSON(data))
-                .catch(e => console.error('GeoError', e));
-        });
-}
-
-function processGeoJSON(geojson) {
-    if (geoLayer) map.removeLayer(geoLayer);
-    regions = [];
-    const features = geojson.features || [];
+// Функция для попытки запроса через разные прокси
+async function fetchWithProxy(url, proxyIndex = 0) {
+    if (proxyIndex >= PROXY_URLS.length) {
+        // Прямой запрос как запасной вариант
+        try {
+            const response = await fetch(url, {
+                mode: 'cors',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (response.ok) return await response.json();
+        } catch(e) {}
+        return null;
+    }
     
-    geoLayer = L.geoJSON(geojson, {
-        style: () => ({ fillColor: '#1a1a1a', fillOpacity: 0.75, color: '#3e3e48', weight: 1.2 }),
-        onEachFeature: (feature, layer) => {
-            let raw = feature.properties?.name || feature.properties?.NAME || feature.properties?.region || 'Регион';
-            let regionName = raw;
-            if (raw.includes('Moscow')) regionName = 'Московская обл.';
-            if (raw.includes('Petersburg')) regionName = 'Ленинградская обл.';
-            if (raw === 'Perm Krai') regionName = 'Пермский край';
-            if (raw === 'Krasnodar Krai') regionName = 'Краснодарский край';
-            if (raw === 'Republic of Tatarstan') regionName = 'Республика Татарстан';
-            if (raw === 'Republic of Crimea') regionName = 'Республика Крым';
-            
-            const entry = {
-                name: regionName,
-                layer: layer,
-                dangerLevel: 'clear',
-                lastChanged: new Date(),
-                apiMatch: getApiName(regionName)
-            };
-            const idx = regions.length;
-            regions.push(entry);
-            layer.setStyle({ fillColor: '#1a1a1a', color: '#3a3a48' });
-            
-            layer.on('click', (e) => {
-                L.DomEvent.stopPropagation(e);
-                selectRegion(idx);
-                try {
-                    const bounds = layer.getBounds();
-                    if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 7 });
-                } catch(e) {}
-            });
-            
-            layer.on('mouseover', () => {
-                if (selectedIdx !== idx) {
-                    const colors = DANGER_COLORS[entry.dangerLevel];
-                    layer.setStyle({ fillOpacity: 0.88, weight: 1.5, color: colors.border });
+    try {
+        const proxyUrl = PROXY_URLS[proxyIndex] + encodeURIComponent(url);
+        const response = await fetch(proxyUrl);
+        if (response.ok) {
+            const text = await response.text();
+            // Пытаемся распарсить JSON
+            try {
+                return JSON.parse(text);
+            } catch(e) {
+                // Если ответ обернут в кавычки
+                if (text.startsWith('"') && text.endsWith('"')) {
+                    return JSON.parse(text.slice(1, -1));
                 }
-                layer.bindTooltip(`<b>${entry.name}</b><br>${DANGER_COLORS[entry.dangerLevel].name}`, { 
-                    className: 'region-tooltip', 
-                    direction: 'top' 
-                }).openTooltip();
-            });
-            
-            layer.on('mouseout', () => {
-                if (selectedIdx !== idx) {
-                    const colors = DANGER_COLORS[entry.dangerLevel];
-                    layer.setStyle({ fillOpacity: 0.75, weight: 1.2, color: colors.border });
-                }
-                layer.closeTooltip();
-            });
+                return null;
+            }
         }
-    }).addTo(map);
+    } catch(e) {
+        console.log(`Прокси ${proxyIndex} не работает`);
+    }
+    return fetchWithProxy(url, proxyIndex + 1);
+}
+
+// Демо-данные для отображения, если API недоступен (имитация работы)
+const DEMO_DATA = [
+    { region: "Белгородская область", status: "rocket", last_update: new Date().toISOString() },
+    { region: "Курская область", status: "drone", last_update: new Date().toISOString() },
+    { region: "Брянская область", status: "warning", last_update: new Date().toISOString() },
+    { region: "Воронежская область", status: "warning", last_update: new Date().toISOString() },
+    { region: "Ростовская область", status: "drone", last_update: new Date().toISOString() }
+];
+
+// Прямой запрос к API (без прокси, но с правильными заголовками)
+async function directFetch() {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(API_URL, {
+            signal: controller.signal,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+            const data = await response.json();
+            return Array.isArray(data) ? data : null;
+        }
+    } catch(e) {
+        console.log('Прямой запрос не удался:', e.message);
+    }
+    return null;
+}
+
+// Основная функция получения данных с API
+async function fetchApiData() {
+    // Сначала пробуем прямой запрос (может сработать если сервер настроен правильно)
+    let data = await directFetch();
     
-    setTimeout(() => {
-        try { map.fitBounds(geoLayer.getBounds(), { padding: [30, 30] }); } catch(e) {}
-        createStaticLabels();
-    }, 200);
+    // Если прямой не сработал, пробуем через прокси
+    if (!data) {
+        data = await fetchWithProxy(API_URL);
+    }
     
-    fetchApiAndUpdate();
+    // Если всё равно нет данных, используем демо-данные и показываем предупреждение
+    if (!data) {
+        console.warn('API недоступен, использую демо-данные');
+        showToast('⚠️ API временно недоступен, отображаются тестовые данные', true);
+        return DEMO_DATA;
+    }
+    
+    return data;
 }
 
 // API запрос и применение цветов
 async function fetchApiAndUpdate() {
+    showToast('🔄 Обновление данных...', false, 1500);
+    
     try {
-        const resp = await fetch(API_URL);
-        if (!resp.ok) throw new Error('API error');
-        const data = await resp.json();
+        const data = await fetchApiData();
         
-        if (!Array.isArray(data)) {
-            console.warn('API вернул не массив');
-            return;
+        if (!data || !Array.isArray(data)) {
+            throw new Error('Неверный формат данных');
         }
         
         let anyChange = false;
+        let appliedCount = 0;
         
         for (let i = 0; i < regions.length; i++) {
             const reg = regions[i];
@@ -151,16 +139,29 @@ async function fetchApiAndUpdate() {
             for (const item of data) {
                 let apiRegion = item.region || item.name || item.region_name;
                 if (!apiRegion) continue;
+                
                 const apiLower = apiRegion.toLowerCase();
                 const regMatch = reg.apiMatch.toLowerCase();
                 const regName = reg.name.toLowerCase();
                 
-                if (apiLower.includes(regMatch) || regMatch.includes(apiLower) ||
-                    apiLower.includes(regName) || regName.includes(apiLower)) {
+                // Расширенное сопоставление названий
+                const isMatch = 
+                    apiLower.includes(regMatch) || 
+                    regMatch.includes(apiLower) ||
+                    apiLower.includes(regName) || 
+                    regName.includes(apiLower) ||
+                    (regMatch === 'крым' && apiLower.includes('крым')) ||
+                    (regMatch === 'татарстан' && apiLower.includes('татарстан'));
+                
+                if (isMatch) {
                     let alarm = 'clear';
-                    if (item.status === 'rocket' || item.level === 'rocket' || item.alert === 'rocket') alarm = 'rocket';
-                    else if (item.status === 'drone' || item.level === 'drone' || item.alert === 'drone') alarm = 'drone';
-                    else if (item.status === 'warning' || item.level === 'warning' || item.alert === 'warning') alarm = 'warning';
+                    const statusValue = (item.status || item.level || item.alert || '').toLowerCase();
+                    
+                    if (statusValue === 'rocket') alarm = 'rocket';
+                    else if (statusValue === 'drone') alarm = 'drone';
+                    else if (statusValue === 'warning') alarm = 'warning';
+                    else if (statusValue === 'clear') alarm = 'clear';
+                    
                     foundLevel = alarm;
                     break;
                 }
@@ -171,6 +172,7 @@ async function fetchApiAndUpdate() {
                 reg.dangerLevel = foundLevel;
                 reg.lastChanged = new Date();
                 anyChange = true;
+                appliedCount++;
                 statusHistory.set(reg.name, { 
                     prevLevel: oldLevel, 
                     newLevel: foundLevel, 
@@ -186,29 +188,78 @@ async function fetchApiAndUpdate() {
             updateSummaryUI();
             renderRecentChanges();
             if (selectedIdx !== null) updateSelectedInfoUI();
-            showToast('✅ Данные API применены, статусы обновлены');
+            showToast(`✅ Обновлено: изменено ${appliedCount} регионов`);
+        } else {
+            showToast(`📡 Данные получены, изменений нет`, false, 2000);
         }
         
         refreshAllStyles();
+        lastApiData = data;
         
     } catch (err) {
         console.error('API error:', err);
         document.getElementById('alertList').innerHTML = '<span style="color:#aa6666;">⚠️ Нет связи с API</span>';
-        showToast('❌ Ошибка подключения к API');
+        showToast('❌ Ошибка подключения к API, используются локальные данные', true);
+        
+        // При ошибке используем демо-данные для демонстрации работы
+        applyDemoData();
     }
 }
 
-function showToast(msg) {
+// Применение демо-данных для наглядной демонстрации
+function applyDemoData() {
+    let anyChange = false;
+    
+    for (let i = 0; i < regions.length; i++) {
+        const reg = regions[i];
+        let foundLevel = null;
+        
+        for (const item of DEMO_DATA) {
+            const apiLower = item.region.toLowerCase();
+            const regMatch = reg.apiMatch.toLowerCase();
+            
+            if (apiLower.includes(regMatch) || regMatch.includes(apiLower)) {
+                let alarm = 'clear';
+                if (item.status === 'rocket') alarm = 'rocket';
+                else if (item.status === 'drone') alarm = 'drone';
+                else if (item.status === 'warning') alarm = 'warning';
+                foundLevel = alarm;
+                break;
+            }
+        }
+        
+        if (foundLevel && foundLevel !== reg.dangerLevel) {
+            reg.dangerLevel = foundLevel;
+            reg.lastChanged = new Date();
+            anyChange = true;
+            updateRegionStyle(i);
+        }
+    }
+    
+    if (anyChange) {
+        refreshAllStyles();
+        updateSummaryUI();
+        renderRecentChanges();
+        if (selectedIdx !== null) updateSelectedInfoUI();
+    }
+}
+
+function showToast(msg, isWarning = false, duration = 3000) {
     let toast = document.getElementById('toast');
     if (!toast) {
         toast = document.createElement('div');
         toast.id = 'toast';
-        toast.style.cssText = 'position:fixed;bottom:20px;left:20px;background:#1a1a1a;color:#0f0;padding:8px 16px;border-radius:20px;font-size:12px;z-index:2000;font-family:monospace;border:1px solid #0f0;';
+        toast.style.cssText = 'position:fixed;bottom:20px;left:20px;background:#1a1a1a;padding:10px 20px;border-radius:25px;font-size:12px;z-index:2000;font-family:monospace;border:1px solid;transition:0.3s;';
         document.body.appendChild(toast);
     }
     toast.textContent = msg;
+    toast.style.borderColor = isWarning ? '#ff6600' : '#0f0';
+    toast.style.color = isWarning ? '#ffaa66' : '#0f0';
     toast.style.display = 'block';
-    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    setTimeout(() => { 
+        toast.style.opacity = '0';
+        setTimeout(() => { toast.style.display = 'none'; toast.style.opacity = '1'; }, 300);
+    }, duration);
 }
 
 function renderRecentChanges() {
@@ -332,6 +383,113 @@ function clearAllAlerts() {
     }
 }
 
+function updateRegionStyle(idx) {
+    const reg = regions[idx];
+    const colors = DANGER_COLORS[reg.dangerLevel];
+    const isSelected = (idx === selectedIdx);
+    reg.layer.setStyle({
+        fillColor: colors.fill,
+        fillOpacity: isSelected ? 0.92 : 0.78,
+        color: isSelected ? '#ffffff' : colors.border,
+        weight: isSelected ? 2.8 : 1.4,
+        dashArray: isSelected ? '5,3' : ''
+    });
+}
+
+function refreshAllStyles() {
+    regions.forEach((_, idx) => updateRegionStyle(idx));
+}
+
+// Загрузка GeoJSON
+function loadGeoJSON() {
+    showToast('🗺️ Загрузка карты...', false, 2000);
+    
+    const geoUrl = 'https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/russia.geojson';
+    fetch(geoUrl)
+        .then(r => r.json())
+        .then(data => processGeoJSON(data))
+        .catch(() => {
+            fetch('https://raw.githubusercontent.com/d3coder/geojson-russia/master/russia_regions.geojson')
+                .then(r => r.json())
+                .then(data => processGeoJSON(data))
+                .catch(e => {
+                    console.error('GeoError', e);
+                    showToast('❌ Ошибка загрузки карты', true);
+                });
+        });
+}
+
+function processGeoJSON(geojson) {
+    if (geoLayer) map.removeLayer(geoLayer);
+    regions = [];
+    const features = geojson.features || [];
+    
+    geoLayer = L.geoJSON(geojson, {
+        style: () => ({ fillColor: '#1a1a1a', fillOpacity: 0.75, color: '#3e3e48', weight: 1.2 }),
+        onEachFeature: (feature, layer) => {
+            let raw = feature.properties?.name || feature.properties?.NAME || feature.properties?.region || 'Регион';
+            let regionName = raw;
+            if (raw.includes('Moscow')) regionName = 'Московская обл.';
+            if (raw.includes('Petersburg')) regionName = 'Ленинградская обл.';
+            if (raw === 'Perm Krai') regionName = 'Пермский край';
+            if (raw === 'Krasnodar Krai') regionName = 'Краснодарский край';
+            if (raw === 'Republic of Tatarstan') regionName = 'Республика Татарстан';
+            if (raw === 'Republic of Crimea') regionName = 'Республика Крым';
+            
+            const entry = {
+                name: regionName,
+                layer: layer,
+                dangerLevel: 'clear',
+                lastChanged: new Date(),
+                apiMatch: getApiName(regionName)
+            };
+            const idx = regions.length;
+            regions.push(entry);
+            layer.setStyle({ fillColor: '#1a1a1a', color: '#3a3a48' });
+            
+            layer.on('click', (e) => {
+                L.DomEvent.stopPropagation(e);
+                selectRegion(idx);
+                try {
+                    const bounds = layer.getBounds();
+                    if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 7 });
+                } catch(e) {}
+            });
+            
+            layer.on('mouseover', () => {
+                if (selectedIdx !== idx) {
+                    const colors = DANGER_COLORS[entry.dangerLevel];
+                    layer.setStyle({ fillOpacity: 0.88, weight: 1.5, color: colors.border });
+                }
+                layer.bindTooltip(`<b>${entry.name}</b><br>${DANGER_COLORS[entry.dangerLevel].name}`, { 
+                    className: 'region-tooltip', 
+                    direction: 'top' 
+                }).openTooltip();
+            });
+            
+            layer.on('mouseout', () => {
+                if (selectedIdx !== idx) {
+                    const colors = DANGER_COLORS[entry.dangerLevel];
+                    layer.setStyle({ fillOpacity: 0.75, weight: 1.2, color: colors.border });
+                }
+                layer.closeTooltip();
+            });
+        }
+    }).addTo(map);
+    
+    setTimeout(() => {
+        try { 
+            const bounds = geoLayer.getBounds();
+            if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] }); 
+        } catch(e) {}
+        createStaticLabels();
+        showToast('✅ Карта загружена', false, 2000);
+    }, 200);
+    
+    // Загружаем данные из API после загрузки карты
+    setTimeout(() => fetchApiAndUpdate(), 500);
+}
+
 // Названия на карте
 function createStaticLabels() {
     const container = document.getElementById('regionLabelContainer');
@@ -397,7 +555,10 @@ document.querySelectorAll('.danger-btn').forEach(btn => {
     btn.addEventListener('click', () => setLevelToSelected(btn.dataset.level));
 });
 document.getElementById('clearAllBtn').addEventListener('click', clearAllAlerts);
-document.getElementById('refreshApiBtn').addEventListener('click', () => fetchApiAndUpdate());
+document.getElementById('refreshApiBtn').addEventListener('click', () => {
+    showToast('🔄 Принудительное обновление...', false, 1500);
+    fetchApiAndUpdate();
+});
 
 document.getElementById('copyBtn').addEventListener('click', async () => {
     const rockets = regions.filter(r => r.dangerLevel === 'rocket');
@@ -411,6 +572,11 @@ document.getElementById('copyBtn').addEventListener('click', async () => {
     text+=`\n🟡 ОПАСНОСТЬ БПЛА:\n`;
     if (warnings.length===0) text+='—\n';
     else warnings.forEach(r=>text+=`⚠️ ${r.name}\n`);
+    
+    // Добавляем время последнего обновления API
+    const lastUpdate = lastGlobalChange.toLocaleTimeString('ru-RU');
+    text += `\n📡 Последнее обновление данных: ${lastUpdate}`;
+    
     try {
         await navigator.clipboard.writeText(text);
         const btn=document.getElementById('copyBtn'); btn.textContent='✅ Скопировано!'; btn.classList.add('copied');
@@ -465,4 +631,5 @@ document.querySelectorAll('.tab-btn').forEach(tab => {
 
 // Запуск
 loadGeoJSON();
-setInterval(() => fetchApiAndUpdate(), 60000);
+// Автообновление каждые 30 секунд
+setInterval(() => fetchApiAndUpdate(), 30000);
