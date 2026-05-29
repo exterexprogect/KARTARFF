@@ -1,68 +1,429 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Карта воздушной тревоги — Россия</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Карта опасностей РФ</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css" />
+    <script src="https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #0a0a0a; }
+        #map { width: 100vw; height: 100vh; background: #000; }
+
+        .legend {
+            position: absolute; bottom: 20px; left: 20px; z-index: 1000;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            border-radius: 12px; color: #eee; width: 240px;
+            border: 1px solid #333; font-size: 13px;
+        }
+        .legend-header {
+            padding: 12px 16px; cursor: pointer; font-weight: bold;
+            display: flex; justify-content: space-between;
+            border-bottom: 1px solid #333;
+        }
+        .legend-items { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+        .legend-item { display: flex; align-items: center; gap: 10px; }
+        .color-box { width: 18px; height: 18px; border-radius: 4px; }
+        .color-missile { background: #800020; }
+        .color-drone-attack { background: #ff0000; }
+        .color-drone-danger { background: #ffcc00; }
+
+        .top-right {
+            position: absolute; top: 20px; right: 20px; z-index: 1000;
+            display: flex; gap: 12px;
+        }
+        .btn {
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
+            border: 1px solid #444; color: white; padding: 8px 16px;
+            border-radius: 30px; cursor: pointer; font-weight: 500;
+            font-size: 14px; transition: 0.2s;
+        }
+        .btn:hover { background: #2a2a2a; }
+        .btn.active { background: #ffcc00; color: #000; border-color: #ffcc00; }
+
+        .ol-popup {
+            background: #1a1a1a; color: #f0f0f0; border-radius: 12px;
+            padding: 12px 18px; min-width: 220px; border-left: 4px solid #ffcc00;
+            font-size: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+        }
+        .popup-closer {
+            float: right; font-size: 18px; color: #aaa; cursor: pointer;
+            text-decoration: none; margin-top: -4px;
+        }
+        .popup-title { font-weight: bold; font-size: 15px; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px; }
+        .popup-danger { color: #ff6666; font-weight: bold; margin-top: 6px; }
+        .popup-warning { color: #ffcc66; font-weight: bold; margin-top: 6px; }
+        .popup-safe { color: #80c080; font-weight: bold; margin-top: 6px; }
+
+        .ol-tooltip {
+            background: rgba(0,0,0,0.95);
+            color: #ffcc00;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 12px;
+            border: 1px solid #ffcc00;
+            pointer-events: none;
+            font-family: monospace;
+            min-width: 280px;
+        }
+        .ol-tooltip hr {
+            margin: 6px 0;
+            border-color: #444;
+        }
+        .tooltip-distance {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-align: center;
+            border-bottom: 1px solid #444;
+            padding-bottom: 4px;
+        }
+        .threat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+            font-size: 11px;
+        }
+        .threat-name {
+            color: #ddd;
+        }
+        .threat-time {
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        .threat-invalid {
+            color: #ff6666;
+        }
+        .threat-invalid .threat-time {
+            color: #ff6666;
+        }
+    </style>
 </head>
 <body>
-    <div id="map"></div>
-    <div class="region-label-container" id="regionLabelContainer"></div>
-    
-    <div class="top-right-panel">
-        <div class="time-widget">
-            <span class="time" id="currentTime">--:--</span>
-            <span class="date" id="currentDate">--.--</span>
-        </div>
-        <a href="https://t.me/kartatrf" target="_blank" class="tg-btn">
-            <svg viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.46-1.901-.903-1.056-.692-1.653-1.123-2.678-1.799-1.185-.781-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.008-1.252-.241-1.865-.44-.752-.244-1.349-.374-1.297-.789.027-.216.324-.437.892-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.178.121.13.156.308.17.442.014.134.031.439.024.679z"/></svg>
-        </a>
-        <button class="menu-btn" id="menuBtn">#</button>
-    </div>
-    
-    <div class="control-panel hidden" id="controlPanel">
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="paint">Покраска</button>
-            <button class="tab-btn" data-tab="summary">Сводка</button>
-        </div>
-        <div class="tab-content active" id="tabPaint">
-            <div class="selected-info" id="selectedInfo" style="display:none;">
-                <div id="selectedRegionName"></div>
-                <div id="selectedRegionStatus"></div>
-                <div id="selectedRegionTime"></div>
-            </div>
-            <div class="danger-buttons">
-                <div class="danger-btn danger-rocket" data-level="rocket">🚀 РАКЕТНАЯ</div>
-                <div class="danger-btn danger-drone" data-level="drone">✈️ БПЛА</div>
-                <div class="danger-btn danger-warning" data-level="warning">⚠️ ОПАСНОСТЬ</div>
-                <div class="danger-btn danger-clear" data-level="clear">✅ ОТБОЙ</div>
-            </div>
-            <button class="btn" id="refreshApiBtn">🔄 Обновить данные с API</button>
-            <button class="btn btn-danger" id="clearAllBtn">Сбросить всё</button>
-            <div class="last-update-badge" id="apiLastUpdateLabel">Последнее изменение: --:--</div>
-        </div>
-        <div class="tab-content" id="tabSummary">
-            <div class="summary-time" id="summaryTime">Сводка на --:--</div>
-            <div class="summary-block">
-                <h4>🔴 ТРЕВОГА (ракета / БПЛА)</h4>
-                <div class="summary-list" id="alertList">Загрузка...</div>
-            </div>
-            <div class="summary-block">
-                <h4>🟡 ОПАСНОСТЬ БПЛА</h4>
-                <div class="summary-list" id="warningList">Загрузка...</div>
-            </div>
-            <div class="summary-block" id="changesBlock">
-                <h4>🕐 ИЗМЕНЕНИЯ ЗА ПОСЛЕДНИЙ ЧАС</h4>
-                <div class="summary-list" id="changesList">—</div>
-            </div>
-            <button class="copy-btn" id="copyBtn">📋 Копировать сводку</button>
-        </div>
-    </div>
+<div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="regions-data.js"></script>
-    <script src="app.js"></script>
+<div class="top-right">
+    <div class="btn" id="rulerBtn">📏 Линейка</div>
+</div>
+
+<div class="legend" id="legend">
+    <div class="legend-header">
+        <span>⚠️ УГРОЗЫ</span>
+        <span id="legendToggle">▼</span>
+    </div>
+    <div id="legendContent" class="legend-items">
+        <div class="legend-item"><div class="color-box color-missile"></div> 🚀 Ракетная опасность</div>
+        <div class="legend-item"><div class="color-box color-drone-attack"></div> 🛩️ Тревога БПЛА</div>
+        <div class="legend-item"><div class="color-box color-drone-danger"></div> ⚠️ Опасность БПЛА</div>
+    </div>
+</div>
+
+<div id="popup" class="ol-popup" style="display: none;">
+    <a href="#" id="popup-closer" class="popup-closer">×</a>
+    <div id="popup-content"></div>
+</div>
+
+<script>
+    const API_URL = 'https://radar-twp9.onrender.com/api/statuses';
+    let currentStatuses = {};
+    let rulerActive = false;
+    let drawInteraction, measureSource, measureLayer;
+
+    // === КАРТА ===
+    const map = new ol.Map({
+        target: 'map',
+        layers: [
+            new ol.layer.Tile({
+                source: new ol.source.XYZ({
+                    url: 'https://{a-c}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                })
+            })
+        ],
+        view: new ol.View({ center: ol.proj.fromLonLat([60, 65]), zoom: 4 })
+    });
+
+    const vectorSource = new ol.source.Vector();
+    const vectorLayer = new ol.layer.Vector({
+        source: vectorSource,
+        declutter: true,
+        style: (feature) => {
+            const regionName = feature.get('name');
+            const data = currentStatuses[regionName] || {};
+            let status = data.status || 'clear';
+            
+            let fillColor = 'rgba(0, 0, 0, 0)';
+            let strokeColor = '#1a1a1a';
+            let strokeWidth = 1;
+            
+            if (status === 'missile_alert') {
+                fillColor = 'rgba(128, 0, 32, 0.7)';
+                strokeColor = '#800020';
+                strokeWidth = 1.5;
+            } else if (status === 'drone_attack') {
+                fillColor = 'rgba(200, 0, 0, 0.65)';
+                strokeColor = '#ff0000';
+                strokeWidth = 1.5;
+            } else if (status === 'drone_danger') {
+                fillColor = 'rgba(200, 160, 0, 0.55)';
+                strokeColor = '#ffcc00';
+                strokeWidth = 1.5;
+            }
+
+            return [
+                new ol.style.Style({
+                    fill: new ol.style.Fill({ color: fillColor }),
+                    stroke: new ol.style.Stroke({ color: strokeColor, width: strokeWidth })
+                }),
+                new ol.style.Style({
+                    text: new ol.style.Text({
+                        text: regionName,
+                        font: 'bold 11px "Segoe UI"',
+                        fill: new ol.style.Fill({ color: '#ffffff' }),
+                        stroke: new ol.style.Stroke({ color: '#000000', width: 3 }),
+                        overflow: true,
+                        placement: 'point'
+                    }),
+                    geometry: (f) => {
+                        const geom = f.getGeometry();
+                        if (geom.getType() === 'MultiPolygon') {
+                            let maxArea = 0, largest;
+                            geom.getPolygons().forEach(p => {
+                                const area = p.getArea();
+                                if (area > maxArea) { maxArea = area; largest = p; }
+                            });
+                            return largest ? largest.getInteriorPoint() : geom;
+                        }
+                        return geom.getInteriorPoint ? geom.getInteriorPoint() : geom;
+                    }
+                })
+            ];
+        }
+    });
+    map.addLayer(vectorLayer);
+
+    // Загрузка границ регионов
+    fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/russia.geojson')
+        .then(r => r.json())
+        .then(geojson => {
+            const format = new ol.format.GeoJSON();
+            const features = format.readFeatures(geojson, { featureProjection: 'EPSG:3857' });
+            vectorSource.addFeatures(features);
+        })
+        .catch(e => console.error('Ошибка загрузки границ:', e));
+
+    // === ПОЛУЧЕНИЕ ДАННЫХ С API ===
+    async function fetchAlerts() {
+        try {
+            const resp = await fetch(API_URL);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const apiData = await resp.json();
+            if (apiData && apiData.regions) {
+                currentStatuses = {};
+                for (const [regionName, info] of Object.entries(apiData.regions)) {
+                    let status = info.status || 'clear';
+                    currentStatuses[regionName] = { status: status };
+                }
+                vectorSource.changed();
+            }
+        } catch (err) {
+            console.error('Ошибка:', err);
+        }
+    }
+
+    fetchAlerts();
+    setInterval(fetchAlerts, 8000);
+
+    // === ПОПАП ===
+    const popupOverlay = new ol.Overlay({ element: document.getElementById('popup'), autoPan: true, offset: [10, -10] });
+    map.addOverlay(popupOverlay);
+    document.getElementById('popup-closer').onclick = () => { 
+        popupOverlay.setPosition(undefined); 
+        document.getElementById('popup').style.display = 'none'; 
+        return false; 
+    };
+
+    map.on('singleclick', (evt) => {
+        const feature = map.forEachFeatureAtPixel(evt.pixel, f => f);
+        if (!feature) return;
+        const name = feature.get('name');
+        const data = currentStatuses[name] || { status: 'clear' };
+        
+        let html = `<div class="popup-title">${name}</div>`;
+        
+        if (data.status === 'missile_alert') {
+            html += `<div class="popup-danger">🚀 РАКЕТНАЯ ОПАСНОСТЬ</div>`;
+        } else if (data.status === 'drone_attack') {
+            html += `<div class="popup-danger">🛩️ ТРЕВОГА БПЛА</div>`;
+        } else if (data.status === 'drone_danger') {
+            html += `<div class="popup-warning">⚠️ ОПАСНОСТЬ БПЛА</div>`;
+        } else {
+            html += `<div class="popup-safe">🛡️ Обстановка спокойная</div>`;
+        }
+        
+        document.getElementById('popup-content').innerHTML = html;
+        popupOverlay.setPosition(evt.coordinate);
+        document.getElementById('popup').style.display = 'block';
+    });
+
+    // === ЛИНЕЙКА ===
+    function formatTime(hours) {
+        if (hours === 0) return "0 сек";
+        const totalSeconds = Math.round(hours * 3600);
+        if (totalSeconds < 60) return `${totalSeconds} сек`;
+        const totalMins = Math.floor(totalSeconds / 60);
+        const remSecs = totalSeconds % 60;
+        if (totalMins < 60) {
+            return `${totalMins} мин ${remSecs} сек`;
+        }
+        const h = Math.floor(totalMins / 60);
+        const m = totalMins % 60;
+        return `${h} ч ${m} мин`;
+    }
+
+    function formatLengthAndTimes(line) {
+        const length = ol.sphere.getLength(line);
+        const km = length / 1000;
+
+        let html = `<div class="tooltip-distance">📏 Расстояние: ${km.toFixed(1)} км</div>`;
+
+        const threats = [
+            { name: "Баллистика (ATACMS, Точка-У)", speed: 3600, limit: 300 },
+            { name: "Крылатые (Нептун, Storm Shadow)", speed: 900, limit: 550 },
+            { name: "Крылатые ракеты-дроны (Фламинго)", speed: 850, limit: 2000 },
+            { name: "БПЛА, в т.ч. дальнобойные", speed: 200, limit: 2000 },
+            { name: "УАБ / Авиабомбы (JDAM, Hammer)", speed: 900, limit: 100 },
+            { name: "РСЗО (HIMARS, Ольха)", speed: 3600, limit: 130 },
+        ];
+
+        threats.forEach((t) => {
+            if (km > t.limit) {
+                html += `<div class="threat-row threat-invalid">
+                            <span class="threat-name">${t.name}</span>
+                            <span class="threat-time">> ${t.limit} км</span>
+                         </div>`;
+            } else {
+                const hours = km / t.speed;
+                html += `<div class="threat-row">
+                            <span class="threat-name">${t.name}</span>
+                            <span class="threat-time">${formatTime(hours)}</span>
+                         </div>`;
+            }
+        });
+
+        return html;
+    }
+
+    function addRulerInteraction() {
+        measureSource = new ol.source.Vector();
+        measureLayer = new ol.layer.Vector({
+            source: measureSource,
+            style: new ol.style.Style({
+                stroke: new ol.style.Stroke({ color: '#ffcc00', width: 3, lineDash: [6, 8] }),
+                image: new ol.style.Circle({ radius: 5, fill: new ol.style.Fill({ color: '#ffcc00' }), stroke: new ol.style.Stroke({ color: '#000', width: 2 }) })
+            }),
+            zIndex: 100
+        });
+        map.addLayer(measureLayer);
+
+        drawInteraction = new ol.interaction.Draw({
+            source: measureSource,
+            type: 'LineString'
+        });
+
+        let currentOverlay = null;
+
+        function removeTooltip() {
+            if (currentOverlay) {
+                map.removeOverlay(currentOverlay);
+                currentOverlay = null;
+            }
+        }
+
+        function createTooltip() {
+            removeTooltip();
+            const element = document.createElement('div');
+            element.className = 'ol-tooltip';
+            currentOverlay = new ol.Overlay({ element: element, offset: [0, -25], positioning: 'bottom-center' });
+            map.addOverlay(currentOverlay);
+            return element;
+        }
+
+        drawInteraction.on('drawstart', (e) => {
+            measureSource.clear();
+            removeTooltip();
+            const sketch = e.feature;
+            
+            const updateTooltip = () => {
+                const geom = sketch.getGeometry();
+                const coords = geom.getCoordinates();
+                if (coords.length < 2) return;
+                
+                const line = new ol.geom.LineString(coords);
+                const tooltipElement = createTooltip();
+                tooltipElement.innerHTML = formatLengthAndTimes(line);
+                const lastPoint = coords[coords.length - 1];
+                currentOverlay.setPosition(lastPoint);
+            };
+            
+            sketch.getGeometry().on('change', updateTooltip);
+        });
+
+        drawInteraction.on('drawend', (e) => {
+            const geom = e.feature.getGeometry();
+            const tooltipElement = createTooltip();
+            tooltipElement.innerHTML = formatLengthAndTimes(geom);
+            const lastPoint = geom.getLastCoordinate();
+            currentOverlay.setPosition(lastPoint);
+        });
+
+        map.addInteraction(drawInteraction);
+        return drawInteraction;
+    }
+
+    function removeRuler() {
+        if (drawInteraction) map.removeInteraction(drawInteraction);
+        if (measureLayer) map.removeLayer(measureLayer);
+        if (measureSource) measureSource.clear();
+        drawInteraction = null;
+        measureLayer = null;
+        measureSource = null;
+        
+        const overlays = map.getOverlays().getArray();
+        overlays.forEach(overlay => {
+            const el = overlay.getElement();
+            if (el && el.classList && el.classList.contains('ol-tooltip')) {
+                map.removeOverlay(overlay);
+            }
+        });
+    }
+
+    document.getElementById('rulerBtn').onclick = () => {
+        if (!rulerActive) {
+            rulerActive = true;
+            addRulerInteraction();
+            document.getElementById('rulerBtn').classList.add('active');
+            document.getElementById('rulerBtn').innerHTML = '📏 Линейка (вкл)';
+        } else {
+            rulerActive = false;
+            removeRuler();
+            document.getElementById('rulerBtn').classList.remove('active');
+            document.getElementById('rulerBtn').innerHTML = '📏 Линейка';
+        }
+    };
+
+    // Сворачивание легенды
+    document.querySelector('.legend-header').onclick = () => {
+        const content = document.getElementById('legendContent');
+        const arrow = document.getElementById('legendToggle');
+        if (content.style.display === 'none') {
+            content.style.display = 'flex';
+            arrow.innerHTML = '▼';
+        } else {
+            content.style.display = 'none';
+            arrow.innerHTML = '▲';
+        }
+    };
+</script>
 </body>
 </html>
