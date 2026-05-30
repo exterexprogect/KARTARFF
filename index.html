@@ -25,15 +25,6 @@
             background: #000;
         }
 
-        /* ========== LIQUID GLASS — ЕДИНЫЙ СТИЛЬ ДЛЯ ВСЕХ МЕНЮ ========== */
-        .glass-element {
-            background: rgba(10, 15, 25, 0.55);
-            backdrop-filter: blur(16px) saturate(180%);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-        }
-
         .center-clock {
             position: absolute;
             top: 22px;
@@ -330,10 +321,10 @@
             <div class="action-btn" id="rulerMenuBtn">📏 Включить мерку</div>
             <div id="rulerStatsPanel" class="stats-panel" style="display: none;">
                 <div class="stat-row"><span>📐 Расстояние:</span> <span id="lastDistance">—</span></div>
+                <div class="stat-row"><span>🚀 Баллистическая (7200 км/ч):</span> <span id="statBallistic">—</span></div>
+                <div class="stat-row"><span>🕊️ Крылатая (900 км/ч):</span> <span id="statCruise">—</span></div>
+                <div class="stat-row"><span>⚡ Гиперзвуковая (12000 км/ч):</span> <span id="statHypersonic">—</span></div>
                 <div class="stat-row"><span>🛸 БПЛА (150 км/ч):</span> <span id="statUAV">—</span></div>
-                <div class="stat-row"><span>⚡ Реактивные БПЛА (400 км/ч):</span> <span id="statJetUAV">—</span></div>
-                <div class="stat-row"><span>🚀 Нептун (900 км/ч):</span> <span id="statNeptun">—</span></div>
-                <div class="stat-row"><span>🦩 Фламинго (250 км/ч):</span> <span id="statFlamingo">—</span></div>
             </div>
             <div class="clock-small-text" style="font-size: 10px; text-align:center; margin-top:8px; opacity:0.7;">Кликните на карту → проведите линию</div>
         </div>
@@ -362,7 +353,7 @@
 </div>
 
 <script>
-    const API_URL = 'https://radar-map.ru/api/state';
+    const API_URL = 'https://radar-twp9.onrender.com/api/statuses';
     let currentStatuses = {};
     let rulerActive = false;
     let drawInteraction, measureSource, measureLayer;
@@ -434,12 +425,10 @@
     const labelLayer = new ol.layer.Vector({
         source: labelSource,
         style: (feature) => {
-            // Увеличиваем дальность видимости: теперь подписи видны при зуме >= 2.5 (вместо 4.5)
             const zoom = map.getView().getZoom();
             if (zoom < 2.5) return new ol.style.Style();
             const regionName = feature.get('name');
             const formattedName = formatRegionNameTwoLines(regionName);
-            // Динамический размер шрифта: чуть крупнее при отдалении, но читаемо
             let fontSize = '10px';
             if (zoom < 3.5) fontSize = '9px';
             else if (zoom < 5) fontSize = '10px';
@@ -568,7 +557,8 @@
             if (apiData && apiData.regions) {
                 currentStatuses = {};
                 for (const [regionName, info] of Object.entries(apiData.regions)) {
-                    currentStatuses[regionName] = { status: info.status || 'clear' };
+                    let status = info.status || 'clear';
+                    currentStatuses[regionName] = { status: status };
                 }
                 updateLayerDistribution();
                 renderFullSummary();
@@ -607,7 +597,6 @@
         }
     });
 
-    // === ЛИНЕЙКА С НОВЫМИ ТИПАМИ СКОРОСТИ ===
     function formatTimeShort(seconds) {
         if (seconds < 60) return `${Math.round(seconds)}с`;
         const mins = Math.floor(seconds / 60);
@@ -623,10 +612,10 @@
         if (!rulerActive) { panel.style.display = 'none'; return; }
         panel.style.display = 'block';
         document.getElementById('lastDistance').innerText = `${km.toFixed(1)} км`;
+        document.getElementById('statBallistic').innerText = formatTimeShort((km / 7200) * 3600);
+        document.getElementById('statCruise').innerText = formatTimeShort((km / 900) * 3600);
+        document.getElementById('statHypersonic').innerText = formatTimeShort((km / 12000) * 3600);
         document.getElementById('statUAV').innerText = formatTimeShort((km / 150) * 3600);
-        document.getElementById('statJetUAV').innerText = formatTimeShort((km / 400) * 3600);
-        document.getElementById('statNeptun').innerText = formatTimeShort((km / 850) * 3600);
-        document.getElementById('statFlamingo').innerText = formatTimeShort((km / 900) * 3600);
     }
     
     function addRulerInteraction() {
@@ -649,10 +638,10 @@
                 const km = ol.sphere.getLength(new ol.geom.LineString(coords)) / 1000;
                 const tooltipEl = createTooltip();
                 tooltipEl.innerHTML = `<div class="tooltip-distance">📏 ${km.toFixed(1)} км</div>
-                                        <div class="threat-row"><span>🛸 БПЛА (150 км/ч):</span> <span>${formatTimeShort((km/150)*3600)}</span></div>
-                                        <div class="threat-row"><span>⚡ Реактивные БПЛА (400 км/ч):</span> <span>${formatTimeShort((km/400)*3600)}</span></div>
-                                        <div class="threat-row"><span>🚀 Нептун (900 км/ч):</span> <span>${formatTimeShort((km/900)*3600)}</span></div>
-                                        <div class="threat-row"><span>🦩 Фламинго (250 км/ч):</span> <span>${formatTimeShort((km/250)*3600)}</span></div>`;
+                                        <div class="threat-row"><span>🚀 Баллистическая (7200 км/ч):</span> <span>${formatTimeShort((km/7200)*3600)}</span></div>
+                                        <div class="threat-row"><span>🕊️ Крылатая (900 км/ч):</span> <span>${formatTimeShort((km/900)*3600)}</span></div>
+                                        <div class="threat-row"><span>⚡ Гиперзвуковая (12000 км/ч):</span> <span>${formatTimeShort((km/12000)*3600)}</span></div>
+                                        <div class="threat-row"><span>🛸 БПЛА (150 км/ч):</span> <span>${formatTimeShort((km/150)*3600)}</span></div>`;
                 currentOverlay.setPosition(coords[coords.length-1]);
                 updateStatsPanel(km);
             };
@@ -663,10 +652,10 @@
             updateStatsPanel(km);
             const tooltipEl = createTooltip();
             tooltipEl.innerHTML = `<div class="tooltip-distance">📏 ${km.toFixed(1)} км</div>
-                                    <div class="threat-row"><span>🛸 БПЛА (150 км/ч):</span> <span>${formatTimeShort((km/150)*3600)}</span></div>
-                                    <div class="threat-row"><span>⚡ Реактивные БПЛА (400 км/ч):</span> <span>${formatTimeShort((km/400)*3600)}</span></div>
-                                    <div class="threat-row"><span>🚀 Нептун (900 км/ч):</span> <span>${formatTimeShort((km/900)*3600)}</span></div>
-                                    <div class="threat-row"><span>🦩 Фламинго (250 км/ч):</span> <span>${formatTimeShort((km/250)*3600)}</span></div>`;
+                                    <div class="threat-row"><span>🚀 Баллистическая (7200 км/ч):</span> <span>${formatTimeShort((km/7200)*3600)}</span></div>
+                                    <div class="threat-row"><span>🕊️ Крылатая (900 км/ч):</span> <span>${formatTimeShort((km/900)*3600)}</span></div>
+                                    <div class="threat-row"><span>⚡ Гиперзвуковая (12000 км/ч):</span> <span>${formatTimeShort((km/12000)*3600)}</span></div>
+                                    <div class="threat-row"><span>🛸 БПЛА (150 км/ч):</span> <span>${formatTimeShort((km/150)*3600)}</span></div>`;
             currentOverlay.setPosition(geom.getLastCoordinate());
         });
         map.addInteraction(drawInteraction);
@@ -753,4 +742,4 @@
     sideMenuElem.classList.remove('open');
 </script>
 </body>
-    </html>
+</html>
