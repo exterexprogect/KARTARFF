@@ -362,7 +362,7 @@
 </div>
 
 <script>
-    const API_URL = 'https://radar-twp9.onrender.com/api/statuses';
+    const API_URL = 'https://serverrada.onrender.com/api/statuses';
     let currentStatuses = {};
     let rulerActive = false;
     let drawInteraction, measureSource, measureLayer;
@@ -625,8 +625,8 @@
         document.getElementById('lastDistance').innerText = `${km.toFixed(1)} км`;
         document.getElementById('statUAV').innerText = formatTimeShort((km / 150) * 3600);
         document.getElementById('statJetUAV').innerText = formatTimeShort((km / 400) * 3600);
-        document.getElementById('statNeptun').innerText = formatTimeShort((km / 900) * 3600);
-        document.getElementById('statFlamingo').innerText = formatTimeShort((km / 250) * 3600);
+        document.getElementById('statNeptun').innerText = formatTimeShort((km / 850) * 3600);
+        document.getElementById('statFlamingo').innerText = formatTimeShort((km / 900) * 3600);
     }
     
     function addRulerInteraction() {
