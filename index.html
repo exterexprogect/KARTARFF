@@ -11,79 +11,175 @@
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #0a0a0a; }
         #map { width: 100vw; height: 100vh; background: #000; }
 
+        /* Центральный таймер */
+        .center-clock {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(12px);
+            padding: 6px 18px;
+            border-radius: 40px;
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 0 12px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+
+        /* Сводка угроз */
+        .summary-panel {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            color: #eee;
+            width: 260px;
+            border: 1px solid #333;
+            font-size: 12px;
+        }
+        .summary-header {
+            padding: 10px 14px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #333;
+        }
+        .summary-content {
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+        }
+        .summary-dot-red {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff0000;
+            box-shadow: 0 0 4px #ff0000;
+        }
+        .summary-dot-yellow {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ffcc00;
+            box-shadow: 0 0 4px #ffcc00;
+        }
+        .copy-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid #555;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-top: 6px;
+            transition: 0.2s;
+        }
+        .copy-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .region-list {
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 10px;
+            margin-top: 6px;
+            border-top: 1px solid #444;
+            padding-top: 6px;
+        }
+        .region-list span {
+            display: block;
+            padding: 2px 0;
+            color: #ddd;
+        }
+
         .legend {
             position: absolute; bottom: 20px; left: 20px; z-index: 1000;
             background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
             border-radius: 12px; color: #eee; width: 240px;
-            border: 1px solid #333; font-size: 13px;
+            border: 1px solid #333; font-size: 12px;
         }
         .legend-header {
-            padding: 12px 16px; cursor: pointer; font-weight: bold;
+            padding: 10px 14px; cursor: pointer; font-weight: bold;
             display: flex; justify-content: space-between;
             border-bottom: 1px solid #333;
         }
-        .legend-items { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
-        .legend-item { display: flex; align-items: center; gap: 10px; }
-        .color-box { width: 18px; height: 18px; border-radius: 4px; }
-        .color-missile { background: #800020; }
-        .color-drone-attack { background: #ff0000; }
-        .color-drone-danger { background: #ffcc00; }
+        .legend-items { padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+        .color-box { width: 16px; height: 16px; border-radius: 3px; }
+        .color-missile { background: #800020; border: 1px solid #ff4444; }
+        .color-drone-attack { background: #cc0000; border: 1px solid #ff8888; }
+        .color-drone-danger { background: #cc9900; border: 1px solid #ffdd66; }
 
         .top-right {
             position: absolute; top: 20px; right: 20px; z-index: 1000;
-            display: flex; gap: 12px;
+            display: flex; gap: 10px;
         }
+        
         .btn {
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
-            border: 1px solid #444; color: white; padding: 8px 16px;
+            background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+            border: 1px solid #444; color: white; padding: 6px 14px;
             border-radius: 30px; cursor: pointer; font-weight: 500;
-            font-size: 14px; transition: 0.2s;
+            font-size: 13px; transition: 0.2s;
         }
         .btn:hover { background: #2a2a2a; }
         .btn.active { background: #ffcc00; color: #000; border-color: #ffcc00; }
 
         .ol-popup {
             background: #1a1a1a; color: #f0f0f0; border-radius: 12px;
-            padding: 12px 18px; min-width: 220px; border-left: 4px solid #ffcc00;
-            font-size: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            padding: 10px 16px; min-width: 200px; border-left: 3px solid #ffcc00;
+            font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            pointer-events: auto;
         }
         .popup-closer {
             float: right; font-size: 18px; color: #aaa; cursor: pointer;
             text-decoration: none; margin-top: -4px;
         }
-        .popup-title { font-weight: bold; font-size: 15px; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px; }
-        .popup-danger { color: #ff6666; font-weight: bold; margin-top: 6px; }
-        .popup-warning { color: #ffcc66; font-weight: bold; margin-top: 6px; }
-        .popup-safe { color: #80c080; font-weight: bold; margin-top: 6px; }
+        .popup-title { font-weight: bold; font-size: 14px; margin-bottom: 6px; border-bottom: 1px solid #333; padding-bottom: 3px; }
+        .popup-danger { color: #ff6666; font-weight: bold; margin-top: 5px; }
+        .popup-warning { color: #ffcc66; font-weight: bold; margin-top: 5px; }
+        .popup-safe { color: #80c080; font-weight: bold; margin-top: 5px; }
 
         .ol-tooltip {
             background: rgba(0,0,0,0.95);
             color: #ffcc00;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-size: 12px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 10px;
             border: 1px solid #ffcc00;
             pointer-events: none;
             font-family: monospace;
-            min-width: 280px;
-        }
-        .ol-tooltip hr {
-            margin: 6px 0;
-            border-color: #444;
+            min-width: 240px;
+            z-index: 2000;
         }
         .tooltip-distance {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             text-align: center;
             border-bottom: 1px solid #444;
-            padding-bottom: 4px;
+            padding-bottom: 3px;
         }
         .threat-row {
             display: flex;
             justify-content: space-between;
-            margin: 4px 0;
-            font-size: 11px;
+            margin: 2px 0;
+            font-size: 9px;
         }
         .threat-name {
             color: #ddd;
@@ -103,6 +199,8 @@
 <body>
 <div id="map"></div>
 
+<div class="center-clock" id="clock">--:-- | --.--</div>
+
 <div class="top-right">
     <div class="btn" id="rulerBtn">📏 Линейка</div>
 </div>
@@ -119,6 +217,25 @@
     </div>
 </div>
 
+<div class="summary-panel" id="summaryPanel">
+    <div class="summary-header" onclick="toggleSummary()">
+        <span>📊 СВОДКА УГРОЗ</span>
+        <span id="summaryToggle">▼</span>
+    </div>
+    <div id="summaryContent" class="summary-content">
+        <div class="summary-item">
+            <div class="summary-dot-red"></div>
+            <span id="attackCount">🔴 Внимание БПЛА/Ракеты: 0</span>
+        </div>
+        <div class="summary-item">
+            <div class="summary-dot-yellow"></div>
+            <span id="dangerCount">🟡 Опасность БПЛА: 0</span>
+        </div>
+        <div id="regionList" class="region-list"></div>
+        <button class="copy-btn" onclick="copySummary()">📋 Копировать сводку</button>
+    </div>
+</div>
+
 <div id="popup" class="ol-popup" style="display: none;">
     <a href="#" id="popup-closer" class="popup-closer">×</a>
     <div id="popup-content"></div>
@@ -130,6 +247,38 @@
     let rulerActive = false;
     let drawInteraction, measureSource, measureLayer;
 
+    // === ЧАСЫ ПО ЦЕНТРУ (МСК, БЕЗ СЕКУНД) ===
+    function updateClock() {
+        const now = new Date();
+        const mskTime = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
+        const hours = mskTime.getHours().toString().padStart(2, '0');
+        const minutes = mskTime.getMinutes().toString().padStart(2, '0');
+        const day = mskTime.getDate().toString().padStart(2, '0');
+        const month = (mskTime.getMonth() + 1).toString().padStart(2, '0');
+        document.getElementById('clock').innerHTML = `${hours}:${minutes} | ${day}.${month}`;
+    }
+    updateClock();
+    setInterval(updateClock, 60000);
+
+    // === ФУНКЦИЯ ДЛЯ ПЕРЕНОСА НАЗВАНИЙ ===
+    function formatRegionName(name) {
+        if (!name) return '';
+        const markers = ['область', 'край', 'республика', 'автономный', 'округ', 'город', 'АО'];
+        for (let marker of markers) {
+            if (name.endsWith(marker)) {
+                const firstPart = name.slice(0, -marker.length).trim();
+                if (firstPart.length > 0) return `${firstPart}\n${marker}`;
+            }
+        }
+        if (name.startsWith('Республика ')) return `Республика\n${name.slice(11)}`;
+        if (name.startsWith('Город ')) return `Город\n${name.slice(6)}`;
+        if (name.length > 14 && name.includes(' ')) {
+            const spaceIndex = name.indexOf(' ');
+            if (spaceIndex > 0) return `${name.substring(0, spaceIndex)}\n${name.substring(spaceIndex + 1)}`;
+        }
+        return name;
+    }
+
     // === КАРТА ===
     const map = new ol.Map({
         target: 'map',
@@ -140,12 +289,25 @@
                 })
             })
         ],
-        view: new ol.View({ center: ol.proj.fromLonLat([60, 65]), zoom: 4 })
+        view: new ol.View({ center: ol.proj.fromLonLat([60, 65]), zoom: 4 }),
+        controls: []
     });
 
-    const vectorSource = new ol.source.Vector();
-    const vectorLayer = new ol.layer.Vector({
-        source: vectorSource,
+    const normalSource = new ol.source.Vector();
+    const dangerSource = new ol.source.Vector();
+    
+    const normalLayer = new ol.layer.Vector({
+        source: normalSource,
+        declutter: true,
+        style: new ol.style.Style({
+            fill: new ol.style.Fill({ color: 'rgba(0, 0, 0, 0)' }),
+            stroke: new ol.style.Stroke({ color: '#666666', width: 1.2 })
+        }),
+        zIndex: 1
+    });
+    
+    const dangerLayer = new ol.layer.Vector({
+        source: dangerSource,
         declutter: true,
         style: (feature) => {
             const regionName = feature.get('name');
@@ -153,66 +315,170 @@
             let status = data.status || 'clear';
             
             let fillColor = 'rgba(0, 0, 0, 0)';
-            let strokeColor = '#1a1a1a';
-            let strokeWidth = 1;
+            let borderColor = '#666666';
+            let borderWidth = 1.2;
             
             if (status === 'missile_alert') {
                 fillColor = 'rgba(128, 0, 32, 0.7)';
-                strokeColor = '#800020';
-                strokeWidth = 1.5;
+                borderColor = '#800020';
+                borderWidth = 2.0;
             } else if (status === 'drone_attack') {
                 fillColor = 'rgba(200, 0, 0, 0.65)';
-                strokeColor = '#ff0000';
-                strokeWidth = 1.5;
+                borderColor = '#ff0000';
+                borderWidth = 2.0;
             } else if (status === 'drone_danger') {
                 fillColor = 'rgba(200, 160, 0, 0.55)';
-                strokeColor = '#ffcc00';
-                strokeWidth = 1.5;
+                borderColor = '#ffcc00';
+                borderWidth = 2.0;
             }
-
-            return [
-                new ol.style.Style({
-                    fill: new ol.style.Fill({ color: fillColor }),
-                    stroke: new ol.style.Stroke({ color: strokeColor, width: strokeWidth })
-                }),
-                new ol.style.Style({
-                    text: new ol.style.Text({
-                        text: regionName,
-                        font: 'bold 11px "Segoe UI"',
-                        fill: new ol.style.Fill({ color: '#ffffff' }),
-                        stroke: new ol.style.Stroke({ color: '#000000', width: 3 }),
-                        overflow: true,
-                        placement: 'point'
-                    }),
-                    geometry: (f) => {
-                        const geom = f.getGeometry();
-                        if (geom.getType() === 'MultiPolygon') {
-                            let maxArea = 0, largest;
-                            geom.getPolygons().forEach(p => {
-                                const area = p.getArea();
-                                if (area > maxArea) { maxArea = area; largest = p; }
-                            });
-                            return largest ? largest.getInteriorPoint() : geom;
-                        }
-                        return geom.getInteriorPoint ? geom.getInteriorPoint() : geom;
-                    }
-                })
-            ];
-        }
+            
+            return new ol.style.Style({
+                fill: new ol.style.Fill({ color: fillColor }),
+                stroke: new ol.style.Stroke({ color: borderColor, width: borderWidth })
+            });
+        },
+        zIndex: 10
     });
-    map.addLayer(vectorLayer);
+    
+    const labelSource = new ol.source.Vector();
+    const labelLayer = new ol.layer.Vector({
+        source: labelSource,
+        style: (feature) => {
+            const regionName = feature.get('name');
+            return new ol.style.Style({
+                text: new ol.style.Text({
+                    text: formatRegionName(regionName),
+                    font: '10px "Segoe UI", sans-serif',
+                    fill: new ol.style.Fill({ color: '#ffffff' }),
+                    stroke: new ol.style.Stroke({ color: '#000000', width: 3 }),
+                    overflow: true,
+                    placement: 'point',
+                    textAlign: 'center'
+                })
+            });
+        },
+        zIndex: 20,
+        declutter: true
+    });
+    
+    map.addLayer(normalLayer);
+    map.addLayer(dangerLayer);
+    map.addLayer(labelLayer);
 
-    // Загрузка границ регионов
+    let allFeatures = [];
+    let labelsAdded = false;
+    
     fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/russia.geojson')
         .then(r => r.json())
         .then(geojson => {
             const format = new ol.format.GeoJSON();
             const features = format.readFeatures(geojson, { featureProjection: 'EPSG:3857' });
-            vectorSource.addFeatures(features);
+            allFeatures = features;
+            
+            if (!labelsAdded) {
+                features.forEach(feature => {
+                    const geom = feature.getGeometry();
+                    let centerPoint = null;
+                    if (geom.getType() === 'MultiPolygon') {
+                        let maxArea = 0, largest;
+                        geom.getPolygons().forEach(p => {
+                            const area = p.getArea();
+                            if (area > maxArea) { maxArea = area; largest = p; }
+                        });
+                        if (largest) centerPoint = largest.getInteriorPoint();
+                    } else if (geom.getType() === 'Polygon') {
+                        centerPoint = geom.getInteriorPoint();
+                    }
+                    if (centerPoint) {
+                        const labelFeature = new ol.Feature(centerPoint);
+                        labelFeature.set('name', feature.get('name'));
+                        labelSource.addFeature(labelFeature);
+                    }
+                });
+                labelsAdded = true;
+            }
+            updateLayerDistribution();
+            updateSummary();
         })
-        .catch(e => console.error('Ошибка загрузки границ:', e));
+        .catch(e => console.error('Ошибка загрузки:', e));
+    
+    function updateLayerDistribution() {
+        normalSource.clear();
+        dangerSource.clear();
+        allFeatures.forEach(feature => {
+            const regionName = feature.get('name');
+            const data = currentStatuses[regionName] || {};
+            const status = data.status || 'clear';
+            const clone = feature.clone();
+            if (status === 'missile_alert' || status === 'drone_attack' || status === 'drone_danger') {
+                dangerSource.addFeature(clone);
+            } else {
+                normalSource.addFeature(clone);
+            }
+        });
+    }
 
-    // === ПОЛУЧЕНИЕ ДАННЫХ С API ===
+    // === СВОДКА УГРОЗ ===
+    function updateSummary() {
+        let attackRegions = [];
+        let dangerRegions = [];
+        
+        for (const [regionName, data] of Object.entries(currentStatuses)) {
+            if (data.status === 'missile_alert' || data.status === 'drone_attack') {
+                attackRegions.push(regionName);
+            } else if (data.status === 'drone_danger') {
+                dangerRegions.push(regionName);
+            }
+        }
+        
+        document.getElementById('attackCount').innerHTML = `🔴 Внимание БПЛА/Ракеты: ${attackRegions.length}`;
+        document.getElementById('dangerCount').innerHTML = `🟡 Опасность БПЛА: ${dangerRegions.length}`;
+        
+        let regionListHtml = '';
+        if (attackRegions.length > 0) {
+            regionListHtml += '<div style="color:#ff8888; margin-top:4px;">🔴 Атаки:</div>';
+            attackRegions.forEach(r => { regionListHtml += `<span>• ${r}</span>`; });
+        }
+        if (dangerRegions.length > 0) {
+            regionListHtml += '<div style="color:#ffcc66; margin-top:6px;">🟡 Опасность:</div>';
+            dangerRegions.forEach(r => { regionListHtml += `<span>• ${r}</span>`; });
+        }
+        if (attackRegions.length === 0 && dangerRegions.length === 0) {
+            regionListHtml = '<div style="color:#80c080; text-align:center; padding:8px;">✅ Нет активных угроз</div>';
+        }
+        document.getElementById('regionList').innerHTML = regionListHtml;
+    }
+
+    window.toggleSummary = function() {
+        const content = document.getElementById('summaryContent');
+        const arrow = document.getElementById('summaryToggle');
+        if (content.style.display === 'none') {
+            content.style.display = 'flex';
+            arrow.innerHTML = '▼';
+        } else {
+            content.style.display = 'none';
+            arrow.innerHTML = '▲';
+        }
+    };
+
+    window.copySummary = function() {
+        let text = '📊 СВОДКА УГРОЗ РФ\n\n';
+        let attackRegions = [];
+        let dangerRegions = [];
+        for (const [regionName, data] of Object.entries(currentStatuses)) {
+            if (data.status === 'missile_alert' || data.status === 'drone_attack') attackRegions.push(regionName);
+            else if (data.status === 'drone_danger') dangerRegions.push(regionName);
+        }
+        text += `🔴 Внимание БПЛА/Ракеты (${attackRegions.length}):\n`;
+        attackRegions.forEach(r => { text += `  • ${r}\n`; });
+        text += `\n🟡 Опасность БПЛА (${dangerRegions.length}):\n`;
+        dangerRegions.forEach(r => { text += `  • ${r}\n`; });
+        if (attackRegions.length === 0 && dangerRegions.length === 0) text += '✅ Нет активных угроз\n';
+        navigator.clipboard.writeText(text);
+        alert('📋 Сводка скопирована в буфер обмена');
+    };
+
+    // === ПОЛУЧЕНИЕ ДАННЫХ ===
     async function fetchAlerts() {
         try {
             const resp = await fetch(API_URL);
@@ -224,7 +490,8 @@
                     let status = info.status || 'clear';
                     currentStatuses[regionName] = { status: status };
                 }
-                vectorSource.changed();
+                updateLayerDistribution();
+                updateSummary();
             }
         } catch (err) {
             console.error('Ошибка:', err);
@@ -232,9 +499,9 @@
     }
 
     fetchAlerts();
-    setInterval(fetchAlerts, 8000);
+    setInterval(fetchAlerts, 15000);
 
-    // === ПОПАП ===
+    // === ПОПАП ТОЛЬКО ПО КЛИКУ ===
     const popupOverlay = new ol.Overlay({ element: document.getElementById('popup'), autoPan: true, offset: [10, -10] });
     map.addOverlay(popupOverlay);
     document.getElementById('popup-closer').onclick = () => { 
@@ -244,73 +511,55 @@
     };
 
     map.on('singleclick', (evt) => {
-        const feature = map.forEachFeatureAtPixel(evt.pixel, f => f);
-        if (!feature) return;
-        const name = feature.get('name');
-        const data = currentStatuses[name] || { status: 'clear' };
-        
-        let html = `<div class="popup-title">${name}</div>`;
-        
-        if (data.status === 'missile_alert') {
-            html += `<div class="popup-danger">🚀 РАКЕТНАЯ ОПАСНОСТЬ</div>`;
-        } else if (data.status === 'drone_attack') {
-            html += `<div class="popup-danger">🛩️ ТРЕВОГА БПЛА</div>`;
-        } else if (data.status === 'drone_danger') {
-            html += `<div class="popup-warning">⚠️ ОПАСНОСТЬ БПЛА</div>`;
+        if (rulerActive) return;
+        const feature = map.forEachFeatureAtPixel(evt.pixel, (f) => f, {
+            layerFilter: (layer) => layer === dangerLayer || layer === normalLayer
+        });
+        if (feature) {
+            const name = feature.get('name');
+            const data = currentStatuses[name] || { status: 'clear' };
+            let html = `<div class="popup-title">${name}</div>`;
+            if (data.status === 'missile_alert') html += `<div class="popup-danger">🚀 РАКЕТНАЯ ОПАСНОСТЬ</div>`;
+            else if (data.status === 'drone_attack') html += `<div class="popup-danger">🛩️ ТРЕВОГА БПЛА</div>`;
+            else if (data.status === 'drone_danger') html += `<div class="popup-warning">⚠️ ОПАСНОСТЬ БПЛА</div>`;
+            else html += `<div class="popup-safe">🛡 Обстановка спокойная</div>`;
+            document.getElementById('popup-content').innerHTML = html;
+            popupOverlay.setPosition(evt.coordinate);
+            document.getElementById('popup').style.display = 'block';
         } else {
-            html += `<div class="popup-safe">🛡️ Обстановка спокойная</div>`;
+            popupOverlay.setPosition(undefined);
+            document.getElementById('popup').style.display = 'none';
         }
-        
-        document.getElementById('popup-content').innerHTML = html;
-        popupOverlay.setPosition(evt.coordinate);
-        document.getElementById('popup').style.display = 'block';
     });
 
     // === ЛИНЕЙКА ===
-    function formatTime(hours) {
-        if (hours === 0) return "0 сек";
-        const totalSeconds = Math.round(hours * 3600);
-        if (totalSeconds < 60) return `${totalSeconds} сек`;
-        const totalMins = Math.floor(totalSeconds / 60);
-        const remSecs = totalSeconds % 60;
-        if (totalMins < 60) {
-            return `${totalMins} мин ${remSecs} сек`;
-        }
-        const h = Math.floor(totalMins / 60);
-        const m = totalMins % 60;
-        return `${h} ч ${m} мин`;
+    function formatTime(seconds) {
+        if (seconds < 60) return `${Math.round(seconds)} сек`;
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.round(seconds % 60);
+        if (mins < 60) return `${mins} мин ${secs} сек`;
+        const hours = Math.floor(mins / 60);
+        const minutes = mins % 60;
+        return `${hours} ч ${minutes} мин`;
     }
 
-    function formatLengthAndTimes(line) {
-        const length = ol.sphere.getLength(line);
-        const km = length / 1000;
-
-        let html = `<div class="tooltip-distance">📏 Расстояние: ${km.toFixed(1)} км</div>`;
-
+    function getThreatsWithTime(km) {
         const threats = [
-            { name: "Баллистика (ATACMS, Точка-У)", speed: 3600, limit: 300 },
-            { name: "Крылатые (Нептун, Storm Shadow)", speed: 900, limit: 550 },
-            { name: "Крылатые ракеты-дроны (Фламинго)", speed: 850, limit: 2000 },
-            { name: "БПЛА, в т.ч. дальнобойные", speed: 200, limit: 2000 },
-            { name: "УАБ / Авиабомбы (JDAM, Hammer)", speed: 900, limit: 100 },
-            { name: "РСЗО (HIMARS, Ольха)", speed: 3600, limit: 130 },
+            { name: "Баллистика", speed: 3600, limit: 300 },
+            { name: "Крылатые ракеты", speed: 900, limit: 550 },
+            { name: "Дальнобойные БПЛА", speed: 200, limit: 2000 },
+            { name: "Авиабомбы", speed: 900, limit: 100 },
+            { name: "РСЗО", speed: 3600, limit: 130 }
         ];
-
-        threats.forEach((t) => {
+        let html = '';
+        threats.forEach(t => {
             if (km > t.limit) {
-                html += `<div class="threat-row threat-invalid">
-                            <span class="threat-name">${t.name}</span>
-                            <span class="threat-time">> ${t.limit} км</span>
-                         </div>`;
+                html += `<div class="threat-row threat-invalid"><span class="threat-name">${t.name}</span><span class="threat-time">> ${t.limit} км</span></div>`;
             } else {
-                const hours = km / t.speed;
-                html += `<div class="threat-row">
-                            <span class="threat-name">${t.name}</span>
-                            <span class="threat-time">${formatTime(hours)}</span>
-                         </div>`;
+                const seconds = (km / t.speed) * 3600;
+                html += `<div class="threat-row"><span class="threat-name">${t.name}</span><span class="threat-time">${formatTime(seconds)}</span></div>`;
             }
         });
-
         return html;
     }
 
@@ -319,27 +568,19 @@
         measureLayer = new ol.layer.Vector({
             source: measureSource,
             style: new ol.style.Style({
-                stroke: new ol.style.Stroke({ color: '#ffcc00', width: 3, lineDash: [6, 8] }),
-                image: new ol.style.Circle({ radius: 5, fill: new ol.style.Fill({ color: '#ffcc00' }), stroke: new ol.style.Stroke({ color: '#000', width: 2 }) })
+                stroke: new ol.style.Stroke({ color: '#ffcc00', width: 2.5, lineDash: [8, 8] }),
+                image: new ol.style.Circle({ radius: 4, fill: new ol.style.Fill({ color: '#ffcc00' }), stroke: new ol.style.Stroke({ color: '#000', width: 1.5 }) })
             }),
             zIndex: 100
         });
         map.addLayer(measureLayer);
 
-        drawInteraction = new ol.interaction.Draw({
-            source: measureSource,
-            type: 'LineString'
-        });
-
+        drawInteraction = new ol.interaction.Draw({ source: measureSource, type: 'LineString' });
         let currentOverlay = null;
 
         function removeTooltip() {
-            if (currentOverlay) {
-                map.removeOverlay(currentOverlay);
-                currentOverlay = null;
-            }
+            if (currentOverlay) { map.removeOverlay(currentOverlay); currentOverlay = null; }
         }
-
         function createTooltip() {
             removeTooltip();
             const element = document.createElement('div');
@@ -353,32 +594,27 @@
             measureSource.clear();
             removeTooltip();
             const sketch = e.feature;
-            
             const updateTooltip = () => {
                 const geom = sketch.getGeometry();
                 const coords = geom.getCoordinates();
                 if (coords.length < 2) return;
-                
                 const line = new ol.geom.LineString(coords);
+                const km = ol.sphere.getLength(line) / 1000;
                 const tooltipElement = createTooltip();
-                tooltipElement.innerHTML = formatLengthAndTimes(line);
-                const lastPoint = coords[coords.length - 1];
-                currentOverlay.setPosition(lastPoint);
+                tooltipElement.innerHTML = `<div class="tooltip-distance">📏 ${km.toFixed(1)} км</div>${getThreatsWithTime(km)}`;
+                currentOverlay.setPosition(coords[coords.length - 1]);
             };
-            
             sketch.getGeometry().on('change', updateTooltip);
         });
 
         drawInteraction.on('drawend', (e) => {
             const geom = e.feature.getGeometry();
+            const km = ol.sphere.getLength(geom) / 1000;
             const tooltipElement = createTooltip();
-            tooltipElement.innerHTML = formatLengthAndTimes(geom);
-            const lastPoint = geom.getLastCoordinate();
-            currentOverlay.setPosition(lastPoint);
+            tooltipElement.innerHTML = `<div class="tooltip-distance">📏 ${km.toFixed(1)} км</div>${getThreatsWithTime(km)}`;
+            currentOverlay.setPosition(geom.getLastCoordinate());
         });
-
         map.addInteraction(drawInteraction);
-        return drawInteraction;
     }
 
     function removeRuler() {
@@ -388,13 +624,9 @@
         drawInteraction = null;
         measureLayer = null;
         measureSource = null;
-        
         const overlays = map.getOverlays().getArray();
         overlays.forEach(overlay => {
-            const el = overlay.getElement();
-            if (el && el.classList && el.classList.contains('ol-tooltip')) {
-                map.removeOverlay(overlay);
-            }
+            if (overlay.getElement()?.classList?.contains('ol-tooltip')) map.removeOverlay(overlay);
         });
     }
 
@@ -412,7 +644,6 @@
         }
     };
 
-    // Сворачивание легенды
     document.querySelector('.legend-header').onclick = () => {
         const content = document.getElementById('legendContent');
         const arrow = document.getElementById('legendToggle');
@@ -426,4 +657,4 @@
     };
 </script>
 </body>
-</html>
+    </html>
