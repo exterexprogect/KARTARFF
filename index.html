@@ -3,160 +3,116 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Карта опасностей РФ — Liquid Glass</title>
+    <title>Карта опасностей РФ — Сводка угроз</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css" />
     <script src="https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
-            overflow: hidden;
-            background: #0a0a0a;
-        }
-
-        #map {
-            width: 100vw;
-            height: 100vh;
-            background: #000;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; background: #0a0a0a; }
+        #map { width: 100vw; height: 100vh; background: #000; }
 
         .center-clock {
-            position: absolute;
-            top: 22px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1100;
-            background: rgba(10, 15, 25, 0.55);
-            backdrop-filter: blur(16px) saturate(180%);
-            border-radius: 48px;
-            padding: 8px 24px;
-            color: #e8e8e8;
-            font-family: 'Arial', 'Segoe UI', sans-serif;
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-            pointer-events: none;
-            transition: opacity 0.3s ease, visibility 0.3s;
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 1100; background: rgba(10,15,25,0.6); backdrop-filter: blur(16px);
+            border-radius: 40px; padding: 8px 24px; color: #e8e8e8;
+            font-size: 22px; font-weight: 700; border: 1px solid rgba(255,255,255,0.25);
+            pointer-events: none; font-family: monospace;
         }
-        .center-clock.hidden-ui { opacity: 0; visibility: hidden; }
 
-        .hamburger-btn {
+        .summary-panel {
             position: absolute;
-            top: 22px;
-            right: 22px;
-            z-index: 1200;
-            background: rgba(10, 15, 25, 0.55);
-            backdrop-filter: blur(16px);
-            border-radius: 36px;
-            width: 48px;
-            height: 48px;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            max-height: calc(100vh - 40px);
+            background: rgba(10, 15, 25, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 1000;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        .hamburger-btn:hover { background: rgba(30, 40, 55, 0.7); transform: scale(0.96); }
-        .hamburger-btn span { display: block; width: 24px; height: 2.5px; background: #e0e0e0; border-radius: 4px; }
-
-        .toggle-ui-btn {
-            position: absolute;
-            top: 85px;
-            right: 22px;
-            z-index: 1200;
-            background: rgba(10, 15, 25, 0.55);
-            backdrop-filter: blur(16px);
-            border-radius: 36px;
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            transition: 0.2s;
-            font-size: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        .toggle-ui-btn:hover { background: rgba(30, 40, 55, 0.7); transform: scale(0.96); }
-
-        .side-menu {
-            position: absolute;
-            top: 85px;
-            right: 85px;
-            width: 320px;
-            z-index: 1150;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.25s;
-            transform: translateX(120%);
-            opacity: 0;
-            pointer-events: none;
-        }
-        .side-menu.open {
-            transform: translateX(0);
-            opacity: 1;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             pointer-events: auto;
         }
-        .side-menu.hidden-global { display: none; }
-
-        .menu-card {
-            background: rgba(10, 15, 25, 0.55);
-            backdrop-filter: blur(18px);
-            border-radius: 28px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-        }
-        .card-header {
-            padding: 16px 20px;
+        .summary-header {
+            padding: 14px 18px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #fff;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.3);
             cursor: pointer;
-            font-weight: 700;
-            font-size: 15px;
             display: flex;
             justify-content: space-between;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-            color: #f0f0f0;
-            background: rgba(0,0,0,0.2);
+            align-items: center;
         }
-        .card-content { padding: 14px 18px; color: #eef; font-size: 13px; }
-
-        .summary-block { display: flex; flex-direction: column; gap: 14px; }
+        .summary-header span:first-child {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .summary-arrow {
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        .summary-content {
+            padding: 12px 16px;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+        .summary-content.collapsed {
+            display: none;
+        }
+        .summary-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        .summary-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        .summary-content::-webkit-scrollbar-thumb {
+            background: #ffaa55;
+            border-radius: 10px;
+        }
+        .summary-time {
+            font-size: 11px;
+            color: #aaa;
+            text-align: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
         .threat-header {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             font-weight: bold;
-            font-size: 15px;
+            font-size: 13px;
             border-left: 3px solid #ff4444;
-            padding-left: 12px;
+            padding-left: 10px;
             margin-bottom: 8px;
             color: #ffcccc;
         }
         .region-list-block {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            margin-left: 18px;
+            gap: 4px;
+            margin-left: 16px;
             margin-bottom: 16px;
         }
         .region-line {
-            font-size: 13px;
+            font-size: 12px;
             color: #ffdd99;
             display: block;
-            line-height: 1.4;
+            line-height: 1.35;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .region-line:hover {
+            color: #ffffff;
+            text-shadow: 0 0 3px #ffaa55;
         }
         .sub-header {
             font-size: 12px;
@@ -164,238 +120,230 @@
             color: #ffaa66;
             margin: 10px 0 5px 0;
         }
-        .copy-btn-glass {
+        .copy-btn {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.3);
-            color: #ffffff;
-            padding: 8px 0;
-            border-radius: 40px;
-            text-align: center;
-            cursor: pointer;
-            font-size: 12px;
-            margin-top: 16px;
-            transition: 0.2s;
-        }
-        .copy-btn-glass:hover { background: rgba(255, 255, 255, 0.2); }
-
-        .legend-glass {
-            position: absolute;
-            bottom: 24px;
-            left: 24px;
-            z-index: 1000;
-            background: rgba(10, 15, 25, 0.55);
-            backdrop-filter: blur(18px);
-            border-radius: 28px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            width: 280px;
-            transition: opacity 0.25s;
-        }
-        .legend-glass.hidden-global { opacity: 0; visibility: hidden; pointer-events: none; }
-        .legend-header {
-            padding: 12px 18px;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-            color: #f0f0f0;
-        }
-        .legend-items { padding: 12px 18px; display: flex; flex-direction: column; gap: 9px; }
-        .legend-item { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #ddd; }
-        .color-box { width: 18px; height: 18px; border-radius: 6px; }
-        .color-missile { background: #800020; border: 1px solid #ff6666; }
-        .color-drone-attack { background: #cc0000; border: 1px solid #ff8888; }
-        .color-drone-danger { background: #cc9900; border: 1px solid #ffdd66; }
-        
-        .legend-summary-duplicate {
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            margin-top: 8px;
-            padding-top: 12px;
-        }
-        .legend-summary-title {
-            font-weight: bold;
-            font-size: 12px;
-            margin-bottom: 8px;
-            color: #ffaa66;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .compact-region-text {
-            font-size: 11px;
-            max-height: 160px;
-            overflow-y: auto;
-            padding-right: 4px;
-            white-space: pre-line;
-            color: #ffddbb;
-        }
-
-        .action-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 40px;
-            padding: 10px 0;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.2s;
-            margin-top: 6px;
-            font-weight: 500;
             color: #fff;
-        }
-        .action-btn.active {
-            background: #ffcc33;
-            color: #000;
-            border-color: #ffcc33;
-        }
-        .stats-panel {
-            background: rgba(0,0,0,0.5);
-            border-radius: 20px;
-            padding: 10px;
-            margin-top: 12px;
-            font-family: monospace;
+            padding: 6px 0;
+            border-radius: 40px;
+            text-align: center;
+            cursor: pointer;
             font-size: 11px;
+            margin-top: 12px;
+            transition: 0.2s;
+            width: 100%;
         }
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 4px 0;
-            color: #ddd;
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
-        .stat-row span:first-child { color: #ffaa66; }
+        .empty-message {
+            color: #aaa;
+            font-style: italic;
+            font-size: 12px;
+            padding: 8px 0;
+        }
+
+        .legend {
+            position: absolute; bottom: 20px; left: 20px; z-index: 1000;
+            background: rgba(10,15,25,0.7); backdrop-filter: blur(16px);
+            border-radius: 16px; padding: 12px 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            font-size: 12px; color: #ddd;
+            pointer-events: none;
+        }
+        .legend-title { font-weight: bold; margin-bottom: 8px; color: #fff; font-size: 13px; }
+        .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+        .color-box { width: 20px; height: 20px; border-radius: 4px; }
+        .color-clear { background: #2a2a2a; border: 1px solid #555; }
+        .color-danger { background: #cc9900; border: 1px solid #ffdd66; }
+        .color-attack { background: #cc0000; border: 1px solid #ff6666; }
+        .color-missile { background: #800020; border: 1px solid #ff8888; }
 
         .ol-popup {
-            background: rgba(10, 15, 25, 0.85);
-            backdrop-filter: blur(16px);
-            border-radius: 16px;
-            border-left: 4px solid #ff4444;
-            color: #f0f0f0;
-            padding: 12px;
-            min-width: 200px;
+            background: rgba(10,15,25,0.9); backdrop-filter: blur(16px); border-radius: 16px;
+            border-left: 4px solid #ff4444; color: #f0f0f0; padding: 12px; min-width: 200px;
+            pointer-events: auto;
+            position: absolute;
         }
-        .popup-closer { float: right; font-size: 18px; color: #aaa; cursor: pointer; text-decoration: none; }
-        .popup-title { font-weight: bold; font-size: 14px; margin-bottom: 6px; border-bottom: 1px solid #333; }
-        .popup-danger { color: #ff6666; font-weight: bold; margin-top: 5px; }
-        .popup-warning { color: #ffcc66; font-weight: bold; }
-        .popup-safe { color: #80c080; }
-
-        .ol-tooltip {
-            background: rgba(10, 15, 25, 0.9);
-            backdrop-filter: blur(12px);
-            border: 1px solid #ff8844;
-            border-radius: 12px;
-            color: #ffcc88;
-            padding: 8px;
-            font-family: monospace;
-        }
-        .tooltip-distance { font-size: 13px; font-weight: bold; border-bottom: 1px solid #ff8844; margin-bottom: 6px; text-align: center; }
-        .threat-row { display: flex; justify-content: space-between; font-size: 9px; margin: 3px 0; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: #ffaa55; border-radius: 10px; }
+        .popup-closer { float: right; font-size: 18px; color: #aaa; text-decoration: none; cursor: pointer; }
     </style>
 </head>
 <body>
 <div id="map"></div>
-
 <div class="center-clock" id="clock">--:--</div>
-<div class="hamburger-btn" id="hamburgerBtn"><span></span><span></span><span></span></div>
-<div class="toggle-ui-btn" id="toggleUiBtn">👁️</div>
 
-<div class="side-menu" id="sideMenu">
-    <div class="menu-card">
-        <div class="card-header" id="summaryHeader">
-            <span>📜 СВОДКА УГРОЗ</span>
-            <span id="summaryArrow">▼</span>
-        </div>
-        <div class="card-content" id="summaryContentArea">
-            <div id="dynamicSummaryBlock" class="summary-block"></div>
-            <div class="copy-btn-glass" id="copySummaryBtn">📋 Копировать сводку</div>
-        </div>
+<div class="summary-panel" id="summaryPanel">
+    <div class="summary-header" id="summaryHeader">
+        <span>📜</span>
+        <span class="summary-arrow" id="summaryArrow">▼</span>
     </div>
-    <div class="menu-card">
-        <div class="card-header" id="toolsHeader">
-            <span>🛠 МЕРКА (ЛИНЕЙКА)</span>
-            <span id="toolsArrow">▼</span>
-        </div>
-        <div class="card-content" id="toolsContent">
-            <div class="action-btn" id="rulerMenuBtn">📏 Включить мерку</div>
-            <div id="rulerStatsPanel" class="stats-panel" style="display: none;">
-                <div class="stat-row"><span>📐 Расстояние:</span> <span id="lastDistance">—</span></div>
-                <div class="stat-row"><span>🚀 Баллистическая (7200 км/ч):</span> <span id="statBallistic">—</span></div>
-                <div class="stat-row"><span>🕊️ Крылатая (900 км/ч):</span> <span id="statCruise">—</span></div>
-                <div class="stat-row"><span>⚡ Гиперзвуковая (12000 км/ч):</span> <span id="statHypersonic">—</span></div>
-                <div class="stat-row"><span>🛸 БПЛА (150 км/ч):</span> <span id="statUAV">—</span></div>
-            </div>
-            <div class="clock-small-text" style="font-size: 10px; text-align:center; margin-top:8px; opacity:0.7;">Кликните на карту → проведите линию</div>
-        </div>
+    <div class="summary-content" id="summaryContent">
+        <div id="dynamicSummaryBlock"></div>
+        <div class="copy-btn" id="copySummaryBtn">📋 Копировать сводку</div>
     </div>
 </div>
 
-<div class="legend-glass" id="legend">
-    <div class="legend-header" id="legendHeader">
-        <span>🚨 ТИПЫ УГРОЗ</span>
-        <span id="legendToggle">▼</span>
-    </div>
-    <div id="legendContent" class="legend-items">
-        <div class="legend-item"><div class="color-box color-missile"></div> 🚀 Ракетная опасность</div>
-        <div class="legend-item"><div class="color-box color-drone-attack"></div> 🔴 Тревога БПЛА</div>
-        <div class="legend-item"><div class="color-box color-drone-danger"></div> 🟡 Опасность БПЛА</div>
-        <div class="legend-summary-duplicate">
-            <div class="legend-summary-title">📋 АКТУАЛЬНАЯ СВОДКА</div>
-            <div id="legendSummaryCopy" class="compact-region-text">Загрузка...</div>
-        </div>
-    </div>
-</div>
-
-<div id="popup" class="ol-popup" style="display: none;">
-    <a href="#" id="popup-closer" class="popup-closer">×</a>
-    <div id="popup-content"></div>
+<div class="legend">
+    <div class="legend-title">🚨 ТИПЫ УГРОЗ</div>
+    <div class="legend-item"><div class="color-box color-clear"></div> Отбой / Спокойно</div>
+    <div class="legend-item"><div class="color-box color-danger"></div> Опасность БПЛА</div>
+    <div class="legend-item"><div class="color-box color-attack"></div> Тревога БПЛА</div>
+    <div class="legend-item"><div class="color-box color-missile"></div> Ракетная опасность</div>
 </div>
 
 <script>
     const API_URL = 'https://radar-twp9.onrender.com/api/statuses';
-    let currentStatuses = {};
-    let rulerActive = false;
-    let drawInteraction, measureSource, measureLayer;
     
+    // Исключённые регионы
     const EXCLUDED_REGIONS = [
         "Донецкая Народная Республика",
         "Луганская Народная Республика",
         "Запорожская область",
-        "Херсонская область"
+        "Херсонская область",
+        "Республика Крым",
+        "Крым",
+        "Севастополь",
+        "ДНР", "ЛНР"
     ];
 
-    function updateClock() {
-        const now = new Date();
-        const mskTime = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
-        const hours = mskTime.getHours().toString().padStart(2, '0');
-        const minutes = mskTime.getMinutes().toString().padStart(2, '0');
-        document.getElementById('clock').innerHTML = `${hours}:${minutes}`;
-    }
-    updateClock();
-    setInterval(updateClock, 60000);
+    // ========== РАСШИРЕННЫЕ СЛОВАРИ ==========
+    const CITY_TO_REGION = {
+        "Москва": "Московская область", "МСК": "Московская область",
+        "Санкт-Петербург": "Ленинградская область", "СПБ": "Ленинградская область", "Питер": "Ленинградская область",
+        "Самара": "Самарская область", "Казань": "Республика Татарстан",
+        "Нижний Новгород": "Нижегородская область", "Н.Новгород": "Нижегородская область",
+        "Саратов": "Саратовская область", "Волгоград": "Волгоградская область",
+        "Ульяновск": "Ульяновская область", "Пенза": "Пензенская область",
+        "Тольятти": "Самарская область", "Набережные Челны": "Республика Татарстан",
+        "Ростов-на-Дону": "Ростовская область", "Краснодар": "Краснодарский край",
+        "Ставрополь": "Ставропольский край", "Воронеж": "Воронежская область",
+        "Астрахань": "Астраханская область", "Екатеринбург": "Свердловская область",
+        "Челябинск": "Челябинская область", "Уфа": "Республика Башкортостан",
+        "Пермь": "Пермский край", "Тюмень": "Тюменская область",
+        "Омск": "Омская область", "Новосибирск": "Новосибирская область",
+        "Красноярск": "Красноярский край", "Иркутск": "Иркутская область",
+        "Махачкала": "Республика Дагестан", "Грозный": "Чеченская Республика",
+        "Назрань": "Республика Ингушетия", "Владикавказ": "Республика Северная Осетия",
+        "Нальчик": "Кабардино-Балкарская Республика", "Черкесск": "Карачаево-Черкесская Республика",
+        "Майкоп": "Республика Адыгея", "Элиста": "Республика Калмыкия",
+        "Петрозаводск": "Республика Карелия", "Сыктывкар": "Республика Коми",
+        "Калининград": "Калининградская область", "Владивосток": "Приморский край",
+        "Хабаровск": "Хабаровский край", "Ижевск": "Республика Удмуртия",
+        "Чебоксары": "Чувашская Республика", "Саранск": "Республика Мордовия"
+    };
 
-    function formatRegionNameTwoLines(name) {
-        if (!name) return '';
-        name = name.trim();
-        const prefixes = ['Республика', 'Город', 'Автономный', 'Край', 'Область'];
-        for (let prefix of prefixes) {
-            if (name.startsWith(prefix + ' ')) {
-                const firstWord = prefix;
-                const rest = name.slice(prefix.length + 1);
-                if (rest.length > 0) return `${firstWord}\n${rest}`;
-                return firstWord;
+    const REGION_ALIASES = {
+        "Москва": "Московская область",
+        "Московская область": "Московская область",
+        "Московская обл.": "Московская область",
+        "Московская губерния": "Московская область",
+        "г. Москва": "Московская область",
+        "город Москва": "Московская область",
+        
+        "Удмуртия": "Республика Удмуртия", "Республика Удмуртия": "Республика Удмуртия", "Удмуртская Республика": "Республика Удмуртия",
+        "Чечня": "Чеченская Республика", "Чеченская Республика": "Чеченская Республика",
+        "Северная Осетия": "Республика Северная Осетия", "Республика Северная Осетия": "Республика Северная Осетия", "Сев. Осетия": "Республика Северная Осетия",
+        "Ингушетия": "Республика Ингушетия", "Республика Ингушетия": "Республика Ингушетия",
+        "Кабардино-Балкария": "Кабардино-Балкарская Республика", "Кабардино-Балкарская Республика": "Кабардино-Балкарская Республика",
+        "Карачаево-Черкесия": "Карачаево-Черкесская Республика", "Карачаево-Черкесская Республика": "Карачаево-Черкесская Республика",
+        "Мордовия": "Республика Мордовия", "Республика Мордовия": "Республика Мордовия",
+        "Татарстан": "Республика Татарстан", "Республика Татарстан": "Республика Татарстан",
+        "Дагестан": "Республика Дагестан", "Республика Дагестан": "Республика Дагестан",
+        "Калмыкия": "Республика Калмыкия", "Республика Калмыкия": "Республика Калмыкия",
+        "Адыгея": "Республика Адыгея", "Республика Адыгея": "Республика Адыгея",
+        "Башкортостан": "Республика Башкортостан", "Республика Башкортостан": "Республика Башкортостан",
+        "Карелия": "Республика Карелия", "Республика Карелия": "Республика Карелия",
+        "Коми": "Республика Коми", "Республика Коми": "Республика Коми",
+        "Марий Эл": "Республика Марий Эл", "Республика Марий Эл": "Республика Марий Эл",
+        "Чувашия": "Чувашская Республика", "Чувашская Республика": "Чувашская Республика",
+        
+        "Ленинградская обл.": "Ленинградская область",
+        "Нижегородская обл.": "Нижегородская область",
+        "Самарская обл.": "Самарская область",
+        "Саратовская обл.": "Саратовская область",
+        "Волгоградская обл.": "Волгоградская область",
+        "Ростовская обл.": "Ростовская область",
+        
+        "Краснодарский край": "Краснодарский край",
+        "Ставропольский край": "Ставропольский край",
+        "Пермский край": "Пермский край",
+        "Хабаровский край": "Хабаровский край",
+        "Приморский край": "Приморский край",
+        "Красноярский край": "Красноярский край",
+        "Алтайский край": "Алтайский край"
+    };
+
+    function normalizeRegionName(inputName) {
+        if (!inputName) return inputName;
+        
+        if (inputName === "Москва" || inputName === "г. Москва" || inputName === "город Москва" || inputName === "Moscow") {
+            return "Московская область";
+        }
+        if (inputName === "Московская область" || inputName === "Московская обл.") {
+            return "Московская область";
+        }
+        
+        if (CITY_TO_REGION[inputName]) {
+            const region = CITY_TO_REGION[inputName];
+            return REGION_ALIASES[region] || region;
+        }
+        
+        if (REGION_ALIASES[inputName]) return REGION_ALIASES[inputName];
+        
+        const lowerInput = inputName.toLowerCase();
+        for (const [alias, canonical] of Object.entries(REGION_ALIASES)) {
+            if (lowerInput === alias.toLowerCase() || lowerInput.includes(alias.toLowerCase()) || alias.toLowerCase().includes(lowerInput)) {
+                return canonical;
             }
         }
-        const spaceIndex = name.indexOf(' ');
-        if (spaceIndex > 0) {
-            const firstWord = name.substring(0, spaceIndex);
-            const rest = name.substring(spaceIndex + 1);
-            return `${firstWord}\n${rest}`;
+        
+        for (const [city, region] of Object.entries(CITY_TO_REGION)) {
+            if (lowerInput.includes(city.toLowerCase())) {
+                return REGION_ALIASES[region] || region;
+            }
         }
-        return name;
+        
+        return inputName.trim();
     }
 
+    // Функция для получения текущего времени и даты
+    function getCurrentTimeString() {
+        const now = new Date();
+        const msk = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
+        const hours = msk.getHours().toString().padStart(2, '0');
+        const minutes = msk.getMinutes().toString().padStart(2, '0');
+        const day = msk.getDate().toString().padStart(2, '0');
+        const month = (msk.getMonth() + 1).toString().padStart(2, '0');
+        return `${hours}:${minutes} | ${day}.${month}`;
+    }
+
+    let regionStatuses = new Map();
+    
+    function getRegionStatus(regionName) {
+        const canonical = normalizeRegionName(regionName);
+        return regionStatuses.get(canonical) || 'clear';
+    }
+    
+    async function fetchAlerts() {
+        try {
+            const resp = await fetch(API_URL);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const apiData = await resp.json();
+            if (apiData && apiData.regions) {
+                regionStatuses.clear();
+                for (const [regionName, info] of Object.entries(apiData.regions)) {
+                    if (EXCLUDED_REGIONS.includes(regionName)) continue;
+                    let status = info.status || 'clear';
+                    const canonical = normalizeRegionName(regionName);
+                    regionStatuses.set(canonical, status);
+                }
+                updateAllLayers();
+                renderFullSummary();
+            }
+        } catch (err) { console.error('Ошибка API:', err); }
+    }
+
+    // ========== КАРТА И 4 СЛОЯ ==========
     const map = new ol.Map({
         target: 'map',
         layers: [new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://{a-c}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' }) })],
@@ -403,343 +351,325 @@
         controls: []
     });
 
-    const normalSource = new ol.source.Vector();
-    const dangerSource = new ol.source.Vector();
-    const normalLayer = new ol.layer.Vector({ source: normalSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(0,0,0,0)' }), stroke: new ol.style.Stroke({ color: '#666666', width: 1.2 }) }), zIndex: 1 });
-    const dangerLayer = new ol.layer.Vector({
-        source: dangerSource,
-        style: (feature) => {
-            const regionName = feature.get('name');
-            const data = currentStatuses[regionName] || {};
-            let status = data.status || 'clear';
-            let fillColor = 'rgba(0, 0, 0, 0)', borderColor = '#666666', borderWidth = 1.2;
-            if (status === 'missile_alert') { fillColor = 'rgba(128, 0, 32, 0.7)'; borderColor = '#800020'; borderWidth = 2.2; }
-            else if (status === 'drone_attack') { fillColor = 'rgba(200, 0, 0, 0.7)'; borderColor = '#cc0000'; borderWidth = 2.2; }
-            else if (status === 'drone_danger') { fillColor = 'rgba(200, 160, 0, 0.55)'; borderColor = '#cc9900'; borderWidth = 2.2; }
-            return new ol.style.Style({ fill: new ol.style.Fill({ color: fillColor }), stroke: new ol.style.Stroke({ color: borderColor, width: borderWidth }) });
-        },
-        zIndex: 10
+    let clearSource = new ol.source.Vector();
+    let dangerSource = new ol.source.Vector();
+    let attackSource = new ol.source.Vector();
+    let missileSource = new ol.source.Vector();
+
+    const clearLayer = new ol.layer.Vector({
+        source: clearSource,
+        style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(42, 42, 42, 0.6)' }), stroke: new ol.style.Stroke({ color: '#555555', width: 1 }) }),
+        zIndex: 5
     });
     
+    const dangerLayer = new ol.layer.Vector({
+        source: dangerSource,
+        style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(204, 153, 0, 0.65)' }), stroke: new ol.style.Stroke({ color: '#cc9900', width: 2 }) }),
+        zIndex: 6
+    });
+    
+    const attackLayer = new ol.layer.Vector({
+        source: attackSource,
+        style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(204, 0, 0, 0.7)' }), stroke: new ol.style.Stroke({ color: '#cc0000', width: 2 }) }),
+        zIndex: 7
+    });
+    
+    const missileLayer = new ol.layer.Vector({
+        source: missileSource,
+        style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(128, 0, 32, 0.75)' }), stroke: new ol.style.Stroke({ color: '#800020', width: 2.2 }) }),
+        zIndex: 8
+    });
+
+    map.addLayer(clearLayer);
+    map.addLayer(dangerLayer);
+    map.addLayer(attackLayer);
+    map.addLayer(missileLayer);
+
     const labelSource = new ol.source.Vector();
     const labelLayer = new ol.layer.Vector({
         source: labelSource,
         style: (feature) => {
             const zoom = map.getView().getZoom();
-            if (zoom < 2.5) return new ol.style.Style();
-            const regionName = feature.get('name');
-            const formattedName = formatRegionNameTwoLines(regionName);
-            let fontSize = '10px';
-            if (zoom < 3.5) fontSize = '9px';
-            else if (zoom < 5) fontSize = '10px';
-            else fontSize = '11px';
+            let name = feature.get('name');
+            if (!name || zoom < 3) return new ol.style.Style();
+            
+            function splitName(n) {
+                if (n.includes('Республика')) {
+                    const parts = n.split(' ');
+                    if (parts.length >= 2) return [parts[0], parts.slice(1).join(' ')];
+                }
+                if (n.includes('область')) {
+                    const parts = n.split(' ');
+                    if (parts.length >= 2) return [parts[0], parts.slice(1).join(' ')];
+                }
+                if (n.includes('край')) {
+                    const parts = n.split(' ');
+                    if (parts.length >= 2) {
+                        if (n === "Краснодарский край") return ["Краснодарский", "край"];
+                        if (n === "Ставропольский край") return ["Ставропольский", "край"];
+                        return [parts[0], parts.slice(1).join(' ')];
+                    }
+                }
+                const spaceIndex = n.indexOf(' ');
+                if (spaceIndex > 0 && n.length - spaceIndex < 25) {
+                    return [n.substring(0, spaceIndex), n.substring(spaceIndex + 1)];
+                }
+                return [n];
+            }
+            
+            const lines = splitName(name);
+            const fontSize = zoom < 5 ? '10px' : '12px';
             
             return new ol.style.Style({
                 text: new ol.style.Text({
-                    text: formattedName,
-                    font: `bold ${fontSize} "Segoe UI", "Arial", sans-serif`,
+                    text: lines.join('\n'),
+                    font: `500 ${fontSize} "Segoe UI"`,
                     fill: new ol.style.Fill({ color: '#ffffff' }),
                     stroke: new ol.style.Stroke({ color: '#000000', width: 2.5 }),
-                    overflow: false,
                     textAlign: 'center',
-                    offsetY: 0,
-                    placement: 'point'
+                    offsetY: 0
                 })
             });
         },
         zIndex: 20,
         declutter: true
     });
-    map.addLayer(normalLayer);
-    map.addLayer(dangerLayer);
     map.addLayer(labelLayer);
-    map.getView().on('change:resolution', () => labelLayer.changed());
 
-    let allFeatures = [];
-    let labelsAdded = false;
+    let allFeaturesMap = new Map();
+
     fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/russia.geojson')
         .then(r => r.json())
         .then(geojson => {
             const format = new ol.format.GeoJSON();
             const features = format.readFeatures(geojson, { featureProjection: 'EPSG:3857' });
-            allFeatures = features;
-            if (!labelsAdded) {
-                features.forEach(feature => {
-                    const geom = feature.getGeometry();
-                    let centerPoint = null;
-                    if (geom.getType() === 'MultiPolygon') {
-                        let maxArea = 0, largest;
+            features.forEach(feature => {
+                let name = feature.get('name');
+                if (!name) return;
+                if (EXCLUDED_REGIONS.some(ex => name.includes(ex))) return;
+                
+                const normalized = normalizeRegionName(name);
+                feature.set('name', normalized);
+                
+                if (allFeaturesMap.has(normalized)) {
+                    const existingFeature = allFeaturesMap.get(normalized);
+                    const existingGeom = existingFeature.getGeometry();
+                    const newGeom = feature.getGeometry();
+                    const collection = new ol.geom.GeometryCollection([existingGeom, newGeom]);
+                    existingFeature.setGeometry(collection);
+                } else {
+                    allFeaturesMap.set(normalized, feature);
+                }
+                
+                const geom = feature.getGeometry();
+                let centerPoint = null;
+                if (geom.getType() === 'MultiPolygon') {
+                    let maxArea = 0, largest;
+                    if (geom.getPolygons) {
                         geom.getPolygons().forEach(p => { const area = p.getArea(); if (area > maxArea) { maxArea = area; largest = p; } });
                         if (largest) centerPoint = largest.getInteriorPoint();
-                    } else if (geom.getType() === 'Polygon') centerPoint = geom.getInteriorPoint();
-                    if (centerPoint) {
-                        const labelFeature = new ol.Feature(centerPoint);
-                        labelFeature.set('name', feature.get('name'));
-                        labelSource.addFeature(labelFeature);
                     }
-                });
-                labelsAdded = true;
-            }
-            updateLayerDistribution();
+                } else if (geom.getType() === 'Polygon') {
+                    centerPoint = geom.getInteriorPoint();
+                } else if (geom.getType() === 'GeometryCollection') {
+                    const geometries = geom.getGeometries();
+                    for (let g of geometries) {
+                        if (g.getType() === 'Polygon') {
+                            centerPoint = g.getInteriorPoint();
+                            break;
+                        } else if (g.getType() === 'MultiPolygon' && g.getPolygons) {
+                            const polys = g.getPolygons();
+                            if (polys.length > 0) {
+                                centerPoint = polys[0].getInteriorPoint();
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (centerPoint && !labelSource.getFeatures().some(f => f.get('name') === normalized)) {
+                    const labelFeature = new ol.Feature(centerPoint);
+                    labelFeature.set('name', normalized);
+                    labelSource.addFeature(labelFeature);
+                }
+            });
+            updateAllLayers();
             renderFullSummary();
         })
         .catch(console.error);
 
-    function updateLayerDistribution() {
-        normalSource.clear();
+    function updateAllLayers() {
+        clearSource.clear();
         dangerSource.clear();
-        allFeatures.forEach(feature => {
-            const regionName = feature.get('name');
-            const data = currentStatuses[regionName] || {};
-            const status = data.status || 'clear';
+        attackSource.clear();
+        missileSource.clear();
+        
+        for (let [name, feature] of allFeaturesMap) {
+            const status = getRegionStatus(name);
             const clone = feature.clone();
-            if (status === 'missile_alert' || status === 'drone_attack' || status === 'drone_danger') dangerSource.addFeature(clone);
-            else normalSource.addFeature(clone);
-        });
-    }
-
-    function isExcludedRegion(name) { return EXCLUDED_REGIONS.includes(name); }
-
-    function getFilteredStatuses() {
-        let attack = [], danger = [];
-        for (const [regionName, data] of Object.entries(currentStatuses)) {
-            if (isExcludedRegion(regionName)) continue;
-            if (data.status === 'missile_alert' || data.status === 'drone_attack') attack.push(regionName);
-            else if (data.status === 'drone_danger') danger.push(regionName);
+            clone.set('name', name);
+            
+            if (status === 'missile_alert') {
+                missileSource.addFeature(clone);
+            } else if (status === 'drone_attack') {
+                attackSource.addFeature(clone);
+            } else if (status === 'drone_danger') {
+                dangerSource.addFeature(clone);
+            } else {
+                clearSource.addFeature(clone);
+            }
         }
-        return { attack, danger };
+        map.render();
     }
 
     function renderFullSummary() {
-        const { attack, danger } = getFilteredStatuses();
-        let mainHtml = '';
-        mainHtml += `<div class="threat-header">🔴 Атака БПЛА / ракет</div>`;
-        mainHtml += `<div class="region-list-block">`;
-        if (attack.length) attack.forEach(r => { mainHtml += `<span class="region-line">• ${r}</span>`; });
-        else mainHtml += `<span class="region-line" style="color:#aaa;">— нет угроз —</span>`;
-        mainHtml += `</div>`;
-        mainHtml += `<div class="sub-header">🟡 Опасность БПЛА</div>`;
-        mainHtml += `<div class="region-list-block">`;
-        if (danger.length) danger.forEach(r => { mainHtml += `<span class="region-line">• ${r}</span>`; });
-        else mainHtml += `<span class="region-line" style="color:#aaa;">— нет угроз —</span>`;
-        mainHtml += `</div>`;
-        document.getElementById('dynamicSummaryBlock').innerHTML = mainHtml;
+        let attack = [];
+        let danger = [];
         
-        let legendText = '';
-        if (attack.length) { legendText += `🔴 Атака БПЛА/ракет:\n`; attack.forEach(r => { legendText += `  ${r}\n`; }); } 
-        else legendText += `🔴 Атака БПЛА/ракет: —\n`;
-        if (danger.length) { legendText += `\n🟡 Опасность БПЛА:\n`; danger.forEach(r => { legendText += `  ${r}\n`; }); } 
-        else legendText += `\n🟡 Опасность БПЛА: —\n`;
-        if (!attack.length && !danger.length) legendText = `✅ Нет активных угроз`;
-        document.getElementById('legendSummaryCopy').innerHTML = legendText;
-    }
-
-    window.copySummaryGlass = function() {
-        const { attack, danger } = getFilteredStatuses();
-        const now = new Date();
-        const mskTime = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
-        const timeStr = `${mskTime.getHours().toString().padStart(2,'0')}:${mskTime.getMinutes().toString().padStart(2,'0')}`;
-        let text = `✈️ Тревоги на территории РФ на ${timeStr}\n\n🔴 Атака БПЛА / ракет (${attack.length}):\n`;
-        attack.forEach(r => { text += `  • ${r}\n`; });
-        text += `\n🟡 Опасность БПЛА (${danger.length}):\n`;
-        danger.forEach(r => { text += `  • ${r}\n`; });
-        if (!attack.length && !danger.length) text += '✅ Нет активных угроз\n';
-        navigator.clipboard.writeText(text);
-        alert('📋 Сводка скопирована');
-    };
-    document.getElementById('copySummaryBtn').addEventListener('click', window.copySummaryGlass);
-
-    async function fetchAlerts() {
-        try {
-            const resp = await fetch(API_URL);
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            const apiData = await resp.json();
-            if (apiData && apiData.regions) {
-                currentStatuses = {};
-                for (const [regionName, info] of Object.entries(apiData.regions)) {
-                    let status = info.status || 'clear';
-                    currentStatuses[regionName] = { status: status };
-                }
-                updateLayerDistribution();
-                renderFullSummary();
+        for (let [name, status] of regionStatuses.entries()) {
+            if (EXCLUDED_REGIONS.some(ex => name.includes(ex) || ex.includes(name))) continue;
+            
+            if (status === 'missile_alert' || status === 'drone_attack') {
+                attack.push(name);
+            } else if (status === 'drone_danger') {
+                danger.push(name);
             }
-        } catch (err) { console.error('Ошибка:', err); }
+        }
+        
+        attack.sort();
+        danger.sort();
+        
+        const timeString = getCurrentTimeString();
+        
+        let html = '';
+        html += `<div class="summary-time">🕐 ${timeString} МСК</div>`;
+        
+        html += `<div class="threat-header">🔴 Атака БПЛА / ракет</div>`;
+        html += `<div class="region-list-block">`;
+        if (attack.length > 0) {
+            attack.forEach(r => {
+                html += `<span class="region-line" data-region="${r}">• ${r}</span>`;
+            });
+        } else {
+            html += `<div class="empty-message">— нет угроз —</div>`;
+        }
+        html += `</div>`;
+        
+        html += `<div class="sub-header">🟡 Опасность БПЛА</div>`;
+        html += `<div class="region-list-block">`;
+        if (danger.length > 0) {
+            danger.forEach(r => {
+                html += `<span class="region-line" data-region="${r}">• ${r}</span>`;
+            });
+        } else {
+            html += `<div class="empty-message">— нет угроз —</div>`;
+        }
+        html += `</div>`;
+        
+        document.getElementById('dynamicSummaryBlock').innerHTML = html;
+        
+        document.querySelectorAll('.region-line').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const regionName = el.dataset.region;
+                const feature = allFeaturesMap.get(regionName);
+                if (feature) {
+                    const geom = feature.getGeometry();
+                    if (geom) map.getView().fit(geom.getExtent(), { padding: [50, 50, 50, 50], maxZoom: 8 });
+                }
+            });
+        });
     }
-    fetchAlerts();
-    setInterval(fetchAlerts, 15000);
 
-    const popupOverlay = new ol.Overlay({ element: document.getElementById('popup'), autoPan: true, offset: [10, -10] });
+    document.getElementById('copySummaryBtn').addEventListener('click', () => {
+        let attack = [];
+        let danger = [];
+        
+        for (let [name, status] of regionStatuses.entries()) {
+            if (EXCLUDED_REGIONS.some(ex => name.includes(ex) || ex.includes(name))) continue;
+            if (status === 'missile_alert' || status === 'drone_attack') attack.push(name);
+            else if (status === 'drone_danger') danger.push(name);
+        }
+        
+        const timeString = getCurrentTimeString();
+        
+        let text = `✈️ Тревоги на территории РФ ${timeString} МСК\n\n`;
+        text += `🔴 АКТИВНАЯ ТРЕВОГА (БПЛА/Ракеты):\n`;
+        if (attack.length) attack.forEach(r => text += `  • ${r}\n`);
+        else text += `  — нет угроз —\n`;
+        
+        text += `\n🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ БПЛА:\n`;
+        if (danger.length) danger.forEach(r => text += `  • ${r}\n`);
+        else text += `  — нет угроз —\n`;
+        
+        navigator.clipboard.writeText(text);
+        const btn = document.getElementById('copySummaryBtn');
+        btn.textContent = 'Скопировано!';
+        setTimeout(() => { btn.textContent = '📋 Копировать сводку'; }, 1500);
+    });
+
+    // Попап
+    const popupElement = document.createElement('div');
+    popupElement.className = 'ol-popup';
+    const popupCloser = document.createElement('a');
+    popupCloser.href = '#';
+    popupCloser.className = 'popup-closer';
+    popupCloser.innerHTML = '×';
+    popupCloser.onclick = () => { popupOverlay.setPosition(undefined); return false; };
+    popupElement.appendChild(popupCloser);
+    const popupContent = document.createElement('div');
+    popupElement.appendChild(popupContent);
+    
+    const popupOverlay = new ol.Overlay({ element: popupElement, autoPan: true, offset: [10, -10] });
     map.addOverlay(popupOverlay);
-    document.getElementById('popup-closer').onclick = () => { popupOverlay.setPosition(undefined); document.getElementById('popup').style.display = 'none'; return false; };
     
     map.on('singleclick', (evt) => {
-        if (rulerActive) return;
         let feature = null;
-        map.forEachFeatureAtPixel(evt.pixel, (f) => {
-            feature = f;
-            return true;
-        }, { layerFilter: (l) => l === dangerLayer || l === normalLayer });
+        const layers = [clearLayer, dangerLayer, attackLayer, missileLayer];
+        for (const layer of layers) {
+            map.forEachFeatureAtPixel(evt.pixel, (f) => { feature = f; return true; }, { layerFilter: (l) => l === layer });
+            if (feature) break;
+        }
         
         if (feature) {
             const name = feature.get('name');
-            const data = currentStatuses[name] || { status: 'clear' };
-            let html = `<div class="popup-title">${name}</div>`;
-            if (data.status === 'missile_alert') html += `<div class="popup-danger">🚀 РАКЕТНАЯ ОПАСНОСТЬ</div>`;
-            else if (data.status === 'drone_attack') html += `<div class="popup-danger">🔴 ТРЕВОГА БПЛА</div>`;
-            else if (data.status === 'drone_danger') html += `<div class="popup-warning">🟡 ОПАСНОСТЬ БПЛА</div>`;
-            else html += `<div class="popup-safe">🟢 Обстановка спокойная</div>`;
-            document.getElementById('popup-content').innerHTML = html;
+            const status = getRegionStatus(name);
+            let html = `<div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; border-bottom: 1px solid #333;">${name}</div>`;
+            if (status === 'missile_alert') html += `<div style="color: #ff6666; font-weight: bold;">🚀 РАКЕТНАЯ ОПАСНОСТЬ</div>`;
+            else if (status === 'drone_attack') html += `<div style="color: #ff6666; font-weight: bold;">🔴 ТРЕВОГА БПЛА</div>`;
+            else if (status === 'drone_danger') html += `<div style="color: #ffcc66; font-weight: bold;">🟡 ОПАСНОСТЬ БПЛА</div>`;
+            else html += `<div style="color: #80c080;">🟢 Отбой / спокойно</div>`;
+            popupContent.innerHTML = html;
             popupOverlay.setPosition(evt.coordinate);
-            document.getElementById('popup').style.display = 'block';
         } else {
             popupOverlay.setPosition(undefined);
-            document.getElementById('popup').style.display = 'none';
         }
     });
 
-    function formatTimeShort(seconds) {
-        if (seconds < 60) return `${Math.round(seconds)}с`;
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.round(seconds % 60);
-        if (mins < 60) return `${mins}м ${secs}с`;
-        const hours = Math.floor(mins / 60);
-        const minutes = mins % 60;
-        return `${hours}ч ${minutes}м`;
-    }
-    
-    function updateStatsPanel(km) {
-        const panel = document.getElementById('rulerStatsPanel');
-        if (!rulerActive) { panel.style.display = 'none'; return; }
-        panel.style.display = 'block';
-        document.getElementById('lastDistance').innerText = `${km.toFixed(1)} км`;
-        document.getElementById('statBallistic').innerText = formatTimeShort((km / 7200) * 3600);
-        document.getElementById('statCruise').innerText = formatTimeShort((km / 900) * 3600);
-        document.getElementById('statHypersonic').innerText = formatTimeShort((km / 12000) * 3600);
-        document.getElementById('statUAV').innerText = formatTimeShort((km / 150) * 3600);
-    }
-    
-    function addRulerInteraction() {
-        if (measureLayer) map.removeLayer(measureLayer);
-        if (measureSource) measureSource.clear();
-        measureSource = new ol.source.Vector();
-        measureLayer = new ol.layer.Vector({ source: measureSource, style: new ol.style.Style({ stroke: new ol.style.Stroke({ color: '#ff8844', width: 2.5, lineDash: [6, 8] }), image: new ol.style.Circle({ radius: 5, fill: new ol.style.Fill({ color: '#ff8844' }) }) }), zIndex: 100 });
-        map.addLayer(measureLayer);
-        if (drawInteraction) map.removeInteraction(drawInteraction);
-        drawInteraction = new ol.interaction.Draw({ source: measureSource, type: 'LineString' });
-        let currentOverlay = null;
-        function removeTooltip() { if (currentOverlay) { map.removeOverlay(currentOverlay); currentOverlay = null; } }
-        function createTooltip() { removeTooltip(); const el = document.createElement('div'); el.className = 'ol-tooltip'; currentOverlay = new ol.Overlay({ element: el, offset: [0, -25], positioning: 'bottom-center' }); map.addOverlay(currentOverlay); return el; }
-        drawInteraction.on('drawstart', (e) => {
-            measureSource.clear(); removeTooltip();
-            const sketch = e.feature;
-            const update = () => {
-                const geom = sketch.getGeometry(), coords = geom.getCoordinates();
-                if (coords.length < 2) return;
-                const km = ol.sphere.getLength(new ol.geom.LineString(coords)) / 1000;
-                const tooltipEl = createTooltip();
-                tooltipEl.innerHTML = `<div class="tooltip-distance">📏 ${km.toFixed(1)} км</div>
-                                        <div class="threat-row"><span>🚀 Баллистическая (7200 км/ч):</span> <span>${formatTimeShort((km/7200)*3600)}</span></div>
-                                        <div class="threat-row"><span>🕊️ Крылатая (900 км/ч):</span> <span>${formatTimeShort((km/900)*3600)}</span></div>
-                                        <div class="threat-row"><span>⚡ Гиперзвуковая (12000 км/ч):</span> <span>${formatTimeShort((km/12000)*3600)}</span></div>
-                                        <div class="threat-row"><span>🛸 БПЛА (150 км/ч):</span> <span>${formatTimeShort((km/150)*3600)}</span></div>`;
-                currentOverlay.setPosition(coords[coords.length-1]);
-                updateStatsPanel(km);
-            };
-            sketch.getGeometry().on('change', update);
-        });
-        drawInteraction.on('drawend', (e) => {
-            const geom = e.feature.getGeometry(), km = ol.sphere.getLength(geom) / 1000;
-            updateStatsPanel(km);
-            const tooltipEl = createTooltip();
-            tooltipEl.innerHTML = `<div class="tooltip-distance">📏 ${km.toFixed(1)} км</div>
-                                    <div class="threat-row"><span>🚀 Баллистическая (7200 км/ч):</span> <span>${formatTimeShort((km/7200)*3600)}</span></div>
-                                    <div class="threat-row"><span>🕊️ Крылатая (900 км/ч):</span> <span>${formatTimeShort((km/900)*3600)}</span></div>
-                                    <div class="threat-row"><span>⚡ Гиперзвуковая (12000 км/ч):</span> <span>${formatTimeShort((km/12000)*3600)}</span></div>
-                                    <div class="threat-row"><span>🛸 БПЛА (150 км/ч):</span> <span>${formatTimeShort((km/150)*3600)}</span></div>`;
-            currentOverlay.setPosition(geom.getLastCoordinate());
-        });
-        map.addInteraction(drawInteraction);
-    }
-    
-    function removeRuler() {
-        if (drawInteraction) map.removeInteraction(drawInteraction);
-        if (measureLayer) map.removeLayer(measureLayer);
-        if (measureSource) measureSource.clear();
-        drawInteraction = null; measureLayer = null; measureSource = null;
-        document.getElementById('rulerStatsPanel').style.display = 'none';
-        map.getOverlays().getArray().forEach(overlay => { if (overlay.getElement()?.classList?.contains('ol-tooltip')) map.removeOverlay(overlay); });
-    }
-    
-    const rulerBtnMenu = document.getElementById('rulerMenuBtn');
-    rulerBtnMenu.onclick = (e) => {
-        e.stopPropagation();
-        if (!rulerActive) {
-            rulerActive = true;
-            addRulerInteraction();
-            rulerBtnMenu.classList.add('active');
-            rulerBtnMenu.innerHTML = '📏 Мерка (активна)';
-        } else {
-            rulerActive = false;
-            removeRuler();
-            rulerBtnMenu.classList.remove('active');
-            rulerBtnMenu.innerHTML = '📏 Включить мерку';
-        }
-    };
-
-    let globalUiHidden = false;
-    const toggleUiBtn = document.getElementById('toggleUiBtn');
-    const sideMenuElem = document.getElementById('sideMenu');
-    const legendElem = document.getElementById('legend');
-    const clockElem = document.getElementById('clock');
-    const hamburgerElem = document.getElementById('hamburgerBtn');
-    
-    function setGlobalUiVisibility(hide) {
-        if (hide) {
-            sideMenuElem.classList.add('hidden-global');
-            legendElem.classList.add('hidden-global');
-            clockElem.classList.add('hidden-ui');
-            hamburgerElem.style.opacity = '0';
-            hamburgerElem.style.pointerEvents = 'none';
-        } else {
-            sideMenuElem.classList.remove('hidden-global');
-            legendElem.classList.remove('hidden-global');
-            clockElem.classList.remove('hidden-ui');
-            hamburgerElem.style.opacity = '1';
-            hamburgerElem.style.pointerEvents = 'auto';
-        }
-        globalUiHidden = hide;
-    }
-    
-    toggleUiBtn.addEventListener('click', () => setGlobalUiVisibility(!globalUiHidden));
-    hamburgerElem.addEventListener('click', () => { if (!globalUiHidden) sideMenuElem.classList.toggle('open'); });
-    
+    // Свёртывание сводки
     const summaryHeader = document.getElementById('summaryHeader');
-    const summaryContentArea = document.getElementById('summaryContentArea');
+    const summaryContent = document.getElementById('summaryContent');
     const summaryArrow = document.getElementById('summaryArrow');
-    summaryHeader.addEventListener('click', () => {
-        const isVisible = summaryContentArea.style.display !== 'none';
-        summaryContentArea.style.display = isVisible ? 'none' : 'block';
-        summaryArrow.innerHTML = isVisible ? '▲' : '▼';
-    });
-    const toolsHeader = document.getElementById('toolsHeader');
-    const toolsContent = document.getElementById('toolsContent');
-    const toolsArrow = document.getElementById('toolsArrow');
-    toolsHeader.addEventListener('click', () => {
-        const isVisible = toolsContent.style.display !== 'none';
-        toolsContent.style.display = isVisible ? 'none' : 'block';
-        toolsArrow.innerHTML = isVisible ? '▲' : '▼';
-    });
-    const legendHeader = document.getElementById('legendHeader');
-    const legendContentDiv = document.getElementById('legendContent');
-    const legendToggleSpan = document.getElementById('legendToggle');
-    legendHeader.addEventListener('click', () => {
-        const isVisible = legendContentDiv.style.display !== 'none';
-        legendContentDiv.style.display = isVisible ? 'none' : 'flex';
-        legendToggleSpan.innerHTML = isVisible ? '▲' : '▼';
-    });
     
-    setGlobalUiVisibility(false);
-    sideMenuElem.classList.remove('open');
+    summaryHeader.addEventListener('click', () => {
+        const isCollapsed = summaryContent.classList.contains('collapsed');
+        if (isCollapsed) {
+            summaryContent.classList.remove('collapsed');
+            summaryArrow.innerHTML = '▼';
+        } else {
+            summaryContent.classList.add('collapsed');
+            summaryArrow.innerHTML = '▲';
+        }
+    });
+
+    function updateClock() {
+        const now = new Date();
+        const msk = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
+        document.getElementById('clock').innerHTML = `${msk.getHours().toString().padStart(2, '0')}:${msk.getMinutes().toString().padStart(2, '0')}`;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    fetchAlerts();
+    setInterval(fetchAlerts, 15000);
 </script>
 </body>
 </html>
