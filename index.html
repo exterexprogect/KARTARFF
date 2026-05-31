@@ -174,7 +174,7 @@
 
 <div class="summary-panel" id="summaryPanel">
     <div class="summary-header" id="summaryHeader">
-        <span>📜</span>
+        <span>📜сводка </span>
         <span class="summary-arrow" id="summaryArrow">▼</span>
     </div>
     <div class="summary-content" id="summaryContent">
@@ -184,7 +184,7 @@
 </div>
 
 <div class="legend">
-    <div class="legend-title">🚨 ТИПЫ УГРОЗ</div>
+    <div class="legend-title">ТИПЫ УГРОЗ</div>
     <div class="legend-item"><div class="color-box color-clear"></div> Отбой / Спокойно</div>
     <div class="legend-item"><div class="color-box color-danger"></div> Опасность БПЛА</div>
     <div class="legend-item"><div class="color-box color-attack"></div> Тревога БПЛА</div>
@@ -541,7 +541,7 @@
         const timeString = getCurrentTimeString();
         
         let html = '';
-        html += `<div class="summary-time">🕐 ${timeString} МСК</div>`;
+        html += `<div class="summary-time">🕐 ${timeString}</div>`;
         
         html += `<div class="threat-header">🔴 Атака БПЛА / ракет</div>`;
         html += `<div class="region-list-block">`;
@@ -591,12 +591,12 @@
         
         const timeString = getCurrentTimeString();
         
-        let text = `✈️ Тревоги на территории РФ ${timeString} МСК\n\n`;
+        let text = `✈️ Тревоги на территории РФ ${timeString}\n\n`;
         text += `🔴 АКТИВНАЯ ТРЕВОГА (БПЛА/Ракеты):\n`;
         if (attack.length) attack.forEach(r => text += `  • ${r}\n`);
         else text += `  — нет угроз —\n`;
         
-        text += `\n🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ БПЛА:\n`;
+        text += `\n🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ (БПЛА):\n`;
         if (danger.length) danger.forEach(r => text += `  • ${r}\n`);
         else text += `  — нет угроз —\n`;
         
