@@ -364,9 +364,8 @@
             <div class="action-btn" id="rulerMenuBtn">📏 Включить мерку</div>
             <div id="rulerStatsPanel" class="stats-panel" style="display: none;">
                 <div class="stat-row"><span>📐 Расстояние:</span> <span id="lastDistance">—</span></div>
-                <div class="stat-row" id="statBallisticRow"><span>🚀 Баллистическая (7200 км/ч):</span> <span id="statBallistic">—</span></div>
                 <div class="stat-row" id="statCruiseRow"><span>🕊️ Крылатая (900 км/ч):</span> <span id="statCruise">—</span></div>
-                <div class="stat-row" id="statUAVRow"><span>🛸 БПЛА 3150 км/ч):</span> <span id="statUAV">—</span></div>
+                <div class="stat-row" id="statUAVRow"><span>🛸 БПЛА 350 км/ч):</span> <span id="statUAV">—</span></div>
             </div>
             <div class="clock-small-text" style="font-size: 10px; text-align:center; margin-top:8px; opacity:0.7;">Кликните на карту → проведите линию</div>
         </div>
@@ -686,7 +685,6 @@
             const tooltipEl = createTooltip();
             let inner = `<div class="tooltip-distance">📏 ${km.toFixed(1)} км</div>`;
             const speeds = [
-                { name: '🚀 Баллистическая', speed: 7200 },
                 { name: '🕊️ Крылатая', speed: 900 },
                 { name: '🛸 БПЛА', speed: 350 }
             ];
