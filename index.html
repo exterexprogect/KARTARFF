@@ -626,10 +626,10 @@
         let text = `✈️ Тревоги на территории РФ ${dateTimeStr}\n\n`;
         text += `🔴 АКТИВНАЯ ТРЕВОГА (БПЛА/Ракеты):\n`;
         if (attack.length) attack.forEach(r => text += `  • ${r}\n`);
-        else text += `<blockquote>  — нет угроз —<blockquote>\n`;
+        else text += ` ```— нет угроз — ``` \n`;
         text += `🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ (БПЛА):\n`;
         if (danger.length) danger.forEach(r => text += `  • ${r}\n`);
-        else text += `<blockquote>  — нет угроз —<blockquote>\n`;
+        else text += `  ```— нет угроз — ```\n`;
         
         navigator.clipboard.writeText(text);
         const btn = document.getElementById('copySummaryBtn');
