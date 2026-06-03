@@ -633,16 +633,16 @@
             let borderColor = '#888';
             if (status === 'missile_alert') {
                 html += `<div style="color: #661122; font-weight: bold;"> РАКЕТНАЯ ОПАСНОСТЬ</div>`;
-                borderColor = '#cc3366';
+                borderColor = '#661122';
             } else if (status === 'drone_attack') {
-                html += `<div style="color: #662211; font-weight: bold;"> ТРЕВОГА БПЛА</div>`;
-                borderColor = '#cc5533';
+                html += `<div style="color: #cc5533; font-weight: bold;"> ТРЕВОГА БПЛА</div>`;
+                borderColor = '#662211';
             } else if (status === 'drone_danger') {
-                html += `<div style="color: #665522; font-weight: bold;"> ОПАСНОСТЬ ПО БПЛА</div>`;
-                borderColor = '#ccaa44';
+                html += `<div style="color: #ccaa44; font-weight: bold;"> ОПАСНОСТЬ ПО БПЛА</div>`;
+                borderColor = '#665522';
             } else {
                 html += `<div style="color: #a0d0a0;"> ОТБОЙ</div>`;
-                borderColor = '#888';
+                borderColor = '#a0d0a0';
             }
             popupContent.innerHTML = html;
             popupElement.style.borderLeftColor = borderColor;
