@@ -626,8 +626,8 @@
         let text = `✈️ Тревоги на территории РФ ${dateTimeStr}\n\n`;
         text += `🔴 АКТИВНАЯ ТРЕВОГА (БПЛА/Ракеты):\n`;
         if (attack.length) attack.forEach(r => text += `  • ${r}\n`);
-        else text += ` — нет угроз —  \n`;
-        text += `🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ (БПЛА):\n\n`;
+        else text += ` — нет угроз —  \n\n`;
+        text += `🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ (БПЛА):\n`;
         if (danger.length) danger.forEach(r => text += `  • ${r}\n`);
         else text += ` — нет угроз — \n`;
         
