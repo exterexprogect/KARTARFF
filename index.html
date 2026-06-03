@@ -250,8 +250,8 @@
     </div>
     <div class="legend-items" id="legendItems">
         <div class="legend-item"><div class="color-box color-clear"></div> Отбой</div>
-        <div class="legend-item"><div class="color-box color-danger"></div>Опасность БПЛА</div>
-        <div class="legend-item"><div class="color-box color-attack"></div>Внимание / Тревога БПЛА</div>
+        <div class="legend-item"><div class="color-box color-danger"></div>Опасность по БПЛА</div>
+        <div class="legend-item"><div class="color-box color-attack"></div>Внимание по БПЛА</div>
         <div class="legend-item"><div class="color-box color-missile"></div>Ракетная опасность</div>
     </div>
 
@@ -626,10 +626,10 @@
         let text = `✈️ Тревоги на территории РФ ${dateTimeStr}\n\n`;
         text += `🔴 АКТИВНАЯ ТРЕВОГА (БПЛА/Ракеты):\n`;
         if (attack.length) attack.forEach(r => text += `  • ${r}\n`);
-        else text += `  — нет угроз —\n`;
+        else text += `<blockquote>  — нет угроз —<blockquote>\n`;
         text += `🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ (БПЛА):\n`;
         if (danger.length) danger.forEach(r => text += `  • ${r}\n`);
-        else text += `  — нет угроз —\n`;
+        else text += `<blockquote>  — нет угроз —<blockquote>\n`;
         
         navigator.clipboard.writeText(text);
         const btn = document.getElementById('copySummaryBtn');
