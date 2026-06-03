@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Карта опасностей РФ — Оригинал (Фиолетовое меню)</title>
+    <title>Карта опасностей РФ — @bplamap</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css" />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js"></script>
@@ -39,22 +39,22 @@
             margin-top: 5px;
         }
 
-        /* ========= ОСНОВНАЯ ПАНЕЛЬ — ФИОЛЕТОВАЯ ГАММА ========= */
+        /* ========= ОСНОВНАЯ ПАНЕЛЬ — СЕРО-ЧЕРНЫЙ ГРАДИЕНТ ========= */
         .legend-summary-panel {
             position: absolute;
             bottom: 20px;
             left: 20px;
             width: 320px;
             max-height: calc(100vh - 100px);
-            background: rgba(25, 15, 40, 0.85);      /* глубокий фиолетовый фон */
-            backdrop-filter: blur(20px);
+            background: linear-gradient(145deg, #2a2a2a 0%, #0f0f0f 100%);
+            backdrop-filter: blur(8px);
             border-radius: 20px;
-            border: 1px solid rgba(170, 100, 220, 0.5); /* фиолетовая обводка */
+            border: 1px solid rgba(80, 80, 100, 0.6);
             z-index: 1000;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
             pointer-events: auto;
             font-size: 12px;
         }
@@ -62,9 +62,9 @@
             padding: 12px 18px;
             font-weight: bold;
             font-size: 13px;
-            color: #e0b0ff;            /* светло-фиолетовый текст */
-            border-bottom: 1px solid rgba(160, 90, 210, 0.4);
-            background: rgba(30, 10, 55, 0.6);
+            color: #e0e0e0;
+            border-bottom: 1px solid rgba(100, 100, 120, 0.5);
+            background: rgba(20, 20, 25, 0.7);
             cursor: pointer;
             display: flex;
             justify-content: space-between;
@@ -74,42 +74,41 @@
         .legend-toggle {
             font-size: 14px;
             transition: transform 0.2s;
-            color: #c58aff;
+            color: #bbbbbb;
         }
         .legend-items {
             padding: 12px 18px;
             display: flex;
             flex-direction: column;
             gap: 8px;
-            border-bottom: 1px solid rgba(160, 90, 210, 0.3);
-            background: rgba(20, 12, 35, 0.5);
+            border-bottom: 1px solid rgba(100, 100, 120, 0.3);
+            background: rgba(0, 0, 0, 0.3);
         }
         .legend-item {
             display: flex;
             align-items: center;
             gap: 10px;
             font-size: 12px;
-            color: #d9c9ff;    /* приглушенный фиолетово-белый */
+            color: #cdcdcd;
         }
         .color-box {
             width: 20px;
             height: 20px;
             border-radius: 4px;
         }
-        /* Цветовые маркеры опасностей оставляем оригинальными (для понятности) */
-        .color-clear { background: rgba(42, 42, 42, 0.6); border: 1px solid #777; }
+        .color-clear { background: rgba(42, 42, 42, 0.8); border: 1px solid #777; }
         .color-danger { background: #cc9900; border: 1px solid #ffdd66; }
         .color-attack { background: #cc0000; border: 1px solid #ff6666; }
         .color-missile { background: #800020; border: 1px solid #ff8888; }
 
-        /* Блок сводки — фиолетовая эстетика */
+        /* Сводка угроз — тот же серо-черный градиент */
         .summary-header {
             padding: 12px 18px;
             font-weight: bold;
             font-size: 13px;
-            color: #e0b0ff;
-            border-bottom: 1px solid rgba(160, 90, 210, 0.4);
-            background: rgba(30, 10, 55, 0.6);
+            color: #e0e0e0;
+            border-bottom: 1px solid rgba(100, 100, 120, 0.5);
+            background: rgba(20, 20, 25, 0.7);
             cursor: pointer;
             display: flex;
             justify-content: space-between;
@@ -118,13 +117,13 @@
         .summary-arrow {
             font-size: 14px;
             transition: transform 0.2s;
-            color: #c58aff;
+            color: #bbbbbb;
         }
         .summary-content {
             padding: 12px 16px;
             overflow-y: auto;
             max-height: 300px;
-            background: rgba(18, 10, 32, 0.7);
+            background: rgba(0, 0, 0, 0.4);
         }
         .summary-content.collapsed {
             display: none;
@@ -133,20 +132,20 @@
             width: 4px;
         }
         .summary-content::-webkit-scrollbar-track {
-            background: rgba(140, 80, 200, 0.2);
+            background: rgba(100, 100, 120, 0.2);
             border-radius: 10px;
         }
         .summary-content::-webkit-scrollbar-thumb {
-            background: #aa66ff;
+            background: #888;
             border-radius: 10px;
         }
         .summary-time {
             font-size: 10px;
-            color: #bbaaff;
+            color: #bbbbbb;
             text-align: center;
             margin-bottom: 12px;
             padding-bottom: 8px;
-            border-bottom: 1px solid rgba(170, 100, 220, 0.4);
+            border-bottom: 1px solid rgba(120, 120, 140, 0.4);
             font-family: monospace;
         }
         .threat-header {
@@ -158,7 +157,7 @@
             border-left: 3px solid #ff7795;
             padding-left: 10px;
             margin-bottom: 6px;
-            color: #ffccee;
+            color: #ffccdd;
         }
         .region-list-block {
             display: flex;
@@ -169,7 +168,7 @@
         }
         .region-line {
             font-size: 11px;
-            color: #eacdff;
+            color: #d0d0e0;
             display: block;
             line-height: 1.35;
             cursor: pointer;
@@ -177,18 +176,18 @@
         }
         .region-line:hover {
             color: #ffffff;
-            text-shadow: 0 0 4px #c08aff;
+            text-shadow: 0 0 3px #aaaaaa;
         }
         .sub-header {
             font-size: 11px;
             font-weight: 600;
-            color: #e5b3ff;
+            color: #ddccaa;
             margin: 8px 0 4px 0;
         }
         .copy-btn {
-            background: rgba(110, 50, 170, 0.5);
-            border: 1px solid rgba(190, 120, 255, 0.6);
-            color: #e8daff;
+            background: rgba(60, 60, 80, 0.6);
+            border: 1px solid rgba(120, 120, 150, 0.7);
+            color: #e0e0e0;
             padding: 6px 0;
             border-radius: 40px;
             text-align: center;
@@ -200,34 +199,34 @@
             font-weight: 500;
         }
         .copy-btn:hover {
-            background: rgba(140, 80, 210, 0.7);
-            border-color: #c08aff;
+            background: rgba(90, 90, 110, 0.8);
+            border-color: #aaa;
             color: white;
         }
         .empty-message {
-            color: #bc9eff;
+            color: #aaa;
             font-style: italic;
             font-size: 11px;
             padding: 6px 0;
         }
 
-        /* Стили попапа (оставим нейтральные, но с фиолетовой ноткой) */
+        /* Попап (нейтральный серый фон) */
         .ol-popup {
-            background: rgba(20, 12, 38, 0.95);
+            background: rgba(20, 20, 28, 0.96);
             backdrop-filter: blur(16px);
             border-radius: 16px;
-            border-left: 4px solid #bf5eff;
-            color: #f0eaff;
+            border-left: 4px solid #888;
+            color: #f0f0f0;
             padding: 12px;
             min-width: 200px;
             pointer-events: auto;
             position: absolute;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
         .popup-closer {
             float: right;
             font-size: 18px;
-            color: #ca9eff;
+            color: #aaa;
             text-decoration: none;
             cursor: pointer;
         }
@@ -250,10 +249,10 @@
         <span class="legend-toggle" id="legendToggle">▼</span>
     </div>
     <div class="legend-items" id="legendItems">
-        <div class="legend-item"><div class="color-box color-clear"></div> Отбой / Спокойно</div>
-        <div class="legend-item"><div class="color-box color-danger"></div> 🟡 Опасность БПЛА</div>
-        <div class="legend-item"><div class="color-box color-attack"></div> 🔴 Внимание / Тревога БПЛА</div>
-        <div class="legend-item"><div class="color-box color-missile"></div> 🚀 Ракетная опасность</div>
+        <div class="legend-item"><div class="color-box color-clear"></div> Отбой</div>
+        <div class="legend-item"><div class="color-box color-danger"></div>Опасность БПЛА</div>
+        <div class="legend-item"><div class="color-box color-attack"></div>Внимание / Тревога БПЛА</div>
+        <div class="legend-item"><div class="color-box color-missile"></div>Ракетная опасность</div>
     </div>
 
     <div class="summary-header" id="summaryHeader">
@@ -268,7 +267,7 @@
 
 <script>
     // ===========================================
-    // ОРИГИНАЛЬНЫЙ РАБОЧИЙ КОД (СОХРАНЁН ПОЛНОСТЬЮ, МЕНЯЕМ ТОЛЬКО ЦВЕТА ИНТЕРФЕЙСА ЧЕРЕЗ CSS)
+    // ОРИГИНАЛЬНЫЙ РАБОЧИЙ КОД (ВОДЯНОЙ ЗНАК УДАЛЕН)
     // ===========================================
     const API_URL = 'https://radar-u913.onrender.com/api/statuses';
     
@@ -277,7 +276,7 @@
         "Луганская Народная Республика",
         "Запорожская область",
         "Херсонская область",
-        "ДНР", "ЛНР"
+        "ДНР", "ЛНР", "крым", "Республика крым",
     ];
 
     const CITY_TO_REGION = {
@@ -323,8 +322,6 @@
         "Приморский край": "Приморский край",
         "Красноярский край": "Красноярский край",
         "Алтайский край": "Алтайский край",
-        "Крым": "Республика Крым",
-        "Республика Крым": "Республика Крым"
     };
 
     function normalizeRegionName(inputName) {
@@ -599,10 +596,10 @@
         
         let html = '';
         html += `<div class="summary-time">🕐 ${dateTimeStr}</div>`;
-        html += `<div class="threat-header">🔴 Атака / Внимание БПЛА / ракет</div><div class="region-list-block">`;
+        html += `<div class="threat-header">🔴 ТРЕВОГА (БПЛА/РАКЕТЫ)</div><div class="region-list-block">`;
         if (attack.length) attack.forEach(r => html += `<span class="region-line" data-region="${r}">• ${r}</span>`);
         else html += `<div class="empty-message">— нет угроз —</div>`;
-        html += `</div><div class="sub-header">🟡 Опасность БПЛА</div><div class="region-list-block">`;
+        html += `</div><div class="sub-header">🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ (БПЛА)</div><div class="region-list-block">`;
         if (danger.length) danger.forEach(r => html += `<span class="region-line" data-region="${r}">• ${r}</span>`);
         else html += `<div class="empty-message">— нет угроз —</div>`;
         html += `</div>`;
@@ -627,10 +624,10 @@
         }
         const dateTimeStr = getFullDateForSummary();
         let text = `✈️ Тревоги на территории РФ ${dateTimeStr}\n\n`;
-        text += `🔴 АТАКА / ВНИМАНИЕ БПЛА / РАКЕТЫ:\n`;
+        text += `🔴 АКТИВНАЯ ТРЕВОГА (БПЛА/Ракеты):\n`;
         if (attack.length) attack.forEach(r => text += `  • ${r}\n`);
         else text += `  — нет угроз —\n`;
-        text += `\n🟡 ОПАСНОСТЬ БПЛА:\n`;
+        text += `🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ (БПЛА):\n`;
         if (danger.length) danger.forEach(r => text += `  • ${r}\n`);
         else text += `  — нет угроз —\n`;
         
@@ -665,11 +662,11 @@
         if (feature) {
             const name = feature.get('name');
             const status = getRegionStatus(name);
-            let html = `<div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; border-bottom: 1px solid #6644aa;">${name}</div>`;
-            if (status === 'missile_alert') html += `<div style="color: #ff8888; font-weight: bold;">🚀 РАКЕТНАЯ ОПАСНОСТЬ</div>`;
-            else if (status === 'drone_attack') html += `<div style="color: #ff8888; font-weight: bold;">🔴 ВНИМАНИЕ / ТРЕВОГА БПЛА</div>`;
-            else if (status === 'drone_danger') html += `<div style="color: #ffcc88; font-weight: bold;">🟡 ОПАСНОСТЬ БПЛА</div>`;
-            else html += `<div style="color: #a0d0a0;">🟢 Отбой / спокойно</div>`;
+            let html = `<div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; border-bottom: 1px solid #555;">${name}</div>`;
+            if (status === 'missile_alert') html += `<div style="color: #ff8888; font-weight: bold;"> РАКЕТНАЯ ОПАСНОСТЬ</div>`;
+            else if (status === 'drone_attack') html += `<div style="color: #ff8888; font-weight: bold;"> ТРЕВОГА БПЛА</div>`;
+            else if (status === 'drone_danger') html += `<div style="color: #ffcc88; font-weight: bold;"> ОПАСНОСТЬ ПО БПЛА</div>`;
+            else html += `<div style="color: #a0d0a0;"> ОТБОЙ</div>`;
             popupContent.innerHTML = html;
             popupOverlay.setPosition(evt.coordinate);
         } else {
@@ -677,7 +674,7 @@
         }
     });
 
-    // Свёртывание легенды (сохраняем функционал)
+    // Свёртывание легенды
     const legendHeader = document.getElementById('legendHeader');
     const legendItems = document.getElementById('legendItems');
     const legendToggle = document.getElementById('legendToggle');
