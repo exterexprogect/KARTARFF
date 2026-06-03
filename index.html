@@ -12,7 +12,7 @@
         body { font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; background: #0a0a0a; }
         #map { width: 100vw; height: 100vh; background: #000; }
 
-        /* Часы (оставляем оригинальный стиль) */
+        /* Часы */
         .orbit-clock {
             position: absolute;
             top: 20px;
@@ -39,7 +39,7 @@
             margin-top: 5px;
         }
 
-        /* ========= ОСНОВНАЯ ПАНЕЛЬ — СЕРО-ЧЕРНЫЙ ГРАДИЕНТ ========= */
+        /* Основная панель */
         .legend-summary-panel {
             position: absolute;
             bottom: 20px;
@@ -69,7 +69,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            letter-spacing: 0.5px;
         }
         .legend-toggle {
             font-size: 14px;
@@ -101,7 +100,6 @@
         .color-attack { background: #cc0000; border: 1px solid #ff6666; }
         .color-missile { background: #800020; border: 1px solid #ff8888; }
 
-        /* Сводка угроз — тот же серо-черный градиент */
         .summary-header {
             padding: 12px 18px;
             font-weight: bold;
@@ -125,27 +123,17 @@
             max-height: 300px;
             background: rgba(0, 0, 0, 0.4);
         }
-        .summary-content.collapsed {
-            display: none;
-        }
-        .summary-content::-webkit-scrollbar {
-            width: 4px;
-        }
-        .summary-content::-webkit-scrollbar-track {
-            background: rgba(100, 100, 120, 0.2);
-            border-radius: 10px;
-        }
-        .summary-content::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
+        .summary-content.collapsed { display: none; }
+        .summary-content::-webkit-scrollbar { width: 4px; }
+        .summary-content::-webkit-scrollbar-track { background: rgba(100,100,120,0.2); border-radius: 10px; }
+        .summary-content::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
         .summary-time {
             font-size: 10px;
             color: #bbbbbb;
             text-align: center;
             margin-bottom: 12px;
             padding-bottom: 8px;
-            border-bottom: 1px solid rgba(120, 120, 140, 0.4);
+            border-bottom: 1px solid rgba(120,120,140,0.4);
             font-family: monospace;
         }
         .threat-header {
@@ -158,6 +146,14 @@
             padding-left: 10px;
             margin-bottom: 6px;
             color: #ffccdd;
+        }
+        .sub-header {
+            font-size: 11px;
+            font-weight: 600;
+            color: #ddccaa;
+            margin: 8px 0 4px 0;
+            border-left: 3px solid #cc9900;
+            padding-left: 10px;
         }
         .region-list-block {
             display: flex;
@@ -174,19 +170,10 @@
             cursor: pointer;
             transition: 0.1s;
         }
-        .region-line:hover {
-            color: #ffffff;
-            text-shadow: 0 0 3px #aaaaaa;
-        }
-        .sub-header {
-            font-size: 11px;
-            font-weight: 600;
-            color: #ddccaa;
-            margin: 8px 0 4px 0;
-        }
+        .region-line:hover { color: #fff; text-shadow: 0 0 3px #aaa; }
         .copy-btn {
-            background: rgba(60, 60, 80, 0.6);
-            border: 1px solid rgba(120, 120, 150, 0.7);
+            background: rgba(60,60,80,0.6);
+            border: 1px solid rgba(120,120,150,0.7);
             color: #e0e0e0;
             padding: 6px 0;
             border-radius: 40px;
@@ -196,23 +183,13 @@
             margin-top: 12px;
             transition: 0.2s;
             width: 100%;
-            font-weight: 500;
         }
-        .copy-btn:hover {
-            background: rgba(90, 90, 110, 0.8);
-            border-color: #aaa;
-            color: white;
-        }
-        .empty-message {
-            color: #aaa;
-            font-style: italic;
-            font-size: 11px;
-            padding: 6px 0;
-        }
+        .copy-btn:hover { background: rgba(90,90,110,0.8); border-color: #aaa; color: white; }
+        .empty-message { color: #aaa; font-style: italic; font-size: 11px; padding: 6px 0; }
 
-        /* Попап (нейтральный серый фон) */
+        /* Попап */
         .ol-popup {
-            background: rgba(20, 20, 28, 0.96);
+            background: rgba(20,20,28,0.96);
             backdrop-filter: blur(16px);
             border-radius: 16px;
             border-left: 4px solid #888;
@@ -222,27 +199,18 @@
             pointer-events: auto;
             position: absolute;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            transition: border-left-color 0.1s ease;
         }
-        .popup-closer {
-            float: right;
-            font-size: 18px;
-            color: #aaa;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        .popup-closer:hover {
-            color: white;
-        }
+        .popup-closer { float: right; font-size: 18px; color: #aaa; text-decoration: none; cursor: pointer; }
+        .popup-closer:hover { color: white; }
     </style>
 </head>
 <body>
 <div id="map"></div>
-
 <div class="orbit-clock">
     <div class="orbit-time" id="orbitTime">--:--</div>
     <div class="orbit-date" id="orbitDate"></div>
 </div>
-
 <div class="legend-summary-panel" id="legendSummaryPanel">
     <div class="legend-header" id="legendHeader">
         <span>🚨 ТИПЫ УГРОЗ</span>
@@ -254,7 +222,6 @@
         <div class="legend-item"><div class="color-box color-attack"></div>Внимание по БПЛА</div>
         <div class="legend-item"><div class="color-box color-missile"></div>Ракетная опасность</div>
     </div>
-
     <div class="summary-header" id="summaryHeader">
         <span>📜 СВОДКА УГРОЗ</span>
         <span class="summary-arrow" id="summaryArrow">▼</span>
@@ -266,17 +233,10 @@
 </div>
 
 <script>
-    // ===========================================
-    // ОРИГИНАЛЬНЫЙ РАБОЧИЙ КОД (ВОДЯНОЙ ЗНАК УДАЛЕН)
-    // ===========================================
     const API_URL = 'https://radar-u913.onrender.com/api/statuses';
-    
     const EXCLUDED_REGIONS = [
-        "Донецкая Народная Республика",
-        "Луганская Народная Республика",
-        "Запорожская область",
-        "Херсонская область",
-        "ДНР", "ЛНР", "крым", "Республика крым",
+        "Донецкая Народная Республика", "Луганская Народная Республика",
+        "Запорожская область", "Херсонская область", "ДНР", "ЛНР", "крым", "Республика крым"
     ];
 
     const CITY_TO_REGION = {
@@ -322,12 +282,60 @@
         "Приморский край": "Приморский край",
         "Красноярский край": "Красноярский край",
         "Алтайский край": "Алтайский край",
+        // Республики (GeoJSON -> полное имя из API)
+        "Татарстан": "Республика Татарстан",
+        "Башкортостан": "Республика Башкортостан",
+        "Удмуртия": "Республика Удмуртия",
+        "Марий Эл": "Республика Марий Эл",
+        "Чувашия": "Чувашская Республика",
+        "Мордовия": "Республика Мордовия",
+        "Карелия": "Республика Карелия",
+        "Коми": "Республика Коми",
+        "Дагестан": "Республика Дагестан",
+        "Ингушетия": "Республика Ингушетия",
+        "Северная Осетия": "Республика Северная Осетия",
+        "Кабардино-Балкария": "Кабардино-Балкарская Республика",
+        "Карачаево-Черкесия": "Карачаево-Черкесская Республика",
+        "Адыгея": "Республика Адыгея",
+        "Калмыкия": "Республика Калмыкия",
+        "Крым": "Республика Крым",
+        "Чечня": "Чеченская Республика",
+        "Алтай": "Республика Алтай",
+        "Тыва": "Республика Тыва",
+        "Хакасия": "Республика Хакасия",
+        // Дополнительно, если придут другие варианты
+        "Республика Татарстан": "Республика Татарстан",
+        "Республика Башкортостан": "Республика Башкортостан",
+        "Республика Удмуртия": "Республика Удмуртия",
+        "Республика Марий Эл": "Республика Марий Эл",
+        "Чувашская Республика": "Чувашская Республика",
+        "Республика Мордовия": "Республика Мордовия",
+        "Республика Карелия": "Республика Карелия",
+        "Республика Коми": "Республика Коми",
+        "Республика Дагестан": "Республика Дагестан",
+        "Республика Ингушетия": "Республика Ингушетия",
+        "Республика Северная Осетия": "Республика Северная Осетия",
+        "Кабардино-Балкарская Республика": "Кабардино-Балкарская Республика",
+        "Карачаево-Черкесская Республика": "Карачаево-Черкесская Республика",
+        "Республика Адыгея": "Республика Адыгея",
+        "Республика Калмыкия": "Республика Калмыкия",
+        "Республика Крым": "Республика Крым",
+        "Чеченская Республика": "Чеченская Республика",
+        "Республика Алтай": "Республика Алтай",
+        "Республика Тыва": "Республика Тыва",
+        "Республика Хакасия": "Республика Хакасия"
     };
 
     function normalizeRegionName(inputName) {
         if (!inputName) return inputName;
-        if (CITY_TO_REGION[inputName]) return REGION_ALIASES[CITY_TO_REGION[inputName]] || CITY_TO_REGION[inputName];
+        // Сначала города
+        if (CITY_TO_REGION[inputName]) {
+            let mapped = CITY_TO_REGION[inputName];
+            return REGION_ALIASES[mapped] || mapped;
+        }
+        // Прямой алиас
         if (REGION_ALIASES[inputName]) return REGION_ALIASES[inputName];
+        // Убираем лишние пробелы
         return inputName.trim();
     }
 
@@ -354,12 +362,11 @@
     }
 
     let regionStatuses = new Map();
-    
     function getRegionStatus(regionName) {
         const canonical = normalizeRegionName(regionName);
         return regionStatuses.get(canonical) || 'clear';
     }
-    
+
     async function fetchAlerts() {
         try {
             const resp = await fetch(API_URL);
@@ -368,7 +375,7 @@
             if (apiData && apiData.regions) {
                 regionStatuses.clear();
                 for (const [regionName, info] of Object.entries(apiData.regions)) {
-                    if (EXCLUDED_REGIONS.includes(regionName)) continue;
+                    if (EXCLUDED_REGIONS.some(ex => regionName.includes(ex))) continue;
                     let status = info.status || 'clear';
                     const canonical = normalizeRegionName(regionName);
                     regionStatuses.set(canonical, status);
@@ -392,29 +399,10 @@
     let attackSource = new ol.source.Vector();
     let missileSource = new ol.source.Vector();
 
-    const clearLayer = new ol.layer.Vector({
-        source: clearSource,
-        style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(42, 42, 42, 0.6)' }), stroke: new ol.style.Stroke({ color: '#555555', width: 1 }) }),
-        zIndex: 5
-    });
-    
-    const dangerLayer = new ol.layer.Vector({
-        source: dangerSource,
-        style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(204, 153, 0, 0.65)' }), stroke: new ol.style.Stroke({ color: '#cc9900', width: 2 }) }),
-        zIndex: 6
-    });
-    
-    const attackLayer = new ol.layer.Vector({
-        source: attackSource,
-        style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(204, 0, 0, 0.7)' }), stroke: new ol.style.Stroke({ color: '#cc0000', width: 2 }) }),
-        zIndex: 7
-    });
-    
-    const missileLayer = new ol.layer.Vector({
-        source: missileSource,
-        style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(128, 0, 32, 0.75)' }), stroke: new ol.style.Stroke({ color: '#800020', width: 2.2 }) }),
-        zIndex: 8
-    });
+    const clearLayer = new ol.layer.Vector({ source: clearSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(42, 42, 42, 0.6)' }), stroke: new ol.style.Stroke({ color: '#555555', width: 1 }) }), zIndex: 5 });
+    const dangerLayer = new ol.layer.Vector({ source: dangerSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(204, 153, 0, 0.65)' }), stroke: new ol.style.Stroke({ color: '#cc9900', width: 2 }) }), zIndex: 6 });
+    const attackLayer = new ol.layer.Vector({ source: attackSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(204, 0, 0, 0.7)' }), stroke: new ol.style.Stroke({ color: '#cc0000', width: 2 }) }), zIndex: 7 });
+    const missileLayer = new ol.layer.Vector({ source: missileSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(128, 0, 32, 0.75)' }), stroke: new ol.style.Stroke({ color: '#800020', width: 2.2 }) }), zIndex: 8 });
 
     map.addLayer(clearLayer);
     map.addLayer(dangerLayer);
@@ -428,7 +416,6 @@
             const zoom = map.getView().getZoom();
             let name = feature.get('name');
             if (!name || zoom < 3) return new ol.style.Style();
-            
             function splitName(n) {
                 if (n === "Москва") return ["Москва"];
                 if (n.includes('Республика')) {
@@ -453,18 +440,15 @@
                 }
                 return [n];
             }
-            
             const lines = splitName(name);
             const fontSize = zoom < 5 ? '10px' : '12px';
-            
             return new ol.style.Style({
                 text: new ol.style.Text({
                     text: lines.join('\n'),
                     font: `500 ${fontSize} "Segoe UI"`,
                     fill: new ol.style.Fill({ color: '#ffffff' }),
                     stroke: new ol.style.Stroke({ color: '#000000', width: 2.5 }),
-                    textAlign: 'center',
-                    offsetY: 0
+                    textAlign: 'center'
                 })
             });
         },
@@ -480,27 +464,21 @@
         .then(geojson => {
             const format = new ol.format.GeoJSON();
             const features = format.readFeatures(geojson, { featureProjection: 'EPSG:3857' });
-            
             let moscowRegionFeatures = [];
-            
             features.forEach(feature => {
                 let name = feature.get('name');
                 if (!name) return;
                 if (EXCLUDED_REGIONS.some(ex => name.includes(ex))) return;
-                
                 const normalized = normalizeRegionName(name);
                 feature.set('name', normalized);
-                
                 if (normalized === "Московская область") {
                     moscowRegionFeatures.push(feature);
                     return;
                 }
-                
                 if (normalized === "Москва") {
                     allFeaturesMap.set("Москва", feature);
                     return;
                 }
-                
                 if (allFeaturesMap.has(normalized)) {
                     const existingFeature = allFeaturesMap.get(normalized);
                     const existingGeom = existingFeature.getGeometry();
@@ -511,7 +489,6 @@
                     allFeaturesMap.set(normalized, feature);
                 }
             });
-            
             if (moscowRegionFeatures.length > 0) {
                 const geoms = moscowRegionFeatures.map(f => f.getGeometry());
                 const collection = new ol.geom.GeometryCollection(geoms);
@@ -520,7 +497,6 @@
                 mergedFeature.set('name', "Московская область");
                 allFeaturesMap.set("Московская область", mergedFeature);
             }
-            
             for (let [name, feature] of allFeaturesMap) {
                 const geom = feature.getGeometry();
                 let centerPoint = null;
@@ -553,32 +529,23 @@
                     labelSource.addFeature(labelFeature);
                 }
             }
-            
             updateAllLayers();
             renderFullSummary();
-        })
-        .catch(console.error);
+        }).catch(console.error);
 
     function updateAllLayers() {
         clearSource.clear();
         dangerSource.clear();
         attackSource.clear();
         missileSource.clear();
-        
         for (let [name, feature] of allFeaturesMap) {
             const status = getRegionStatus(name);
             const clone = feature.clone();
             clone.set('name', name);
-            
-            if (status === 'missile_alert') {
-                missileSource.addFeature(clone);
-            } else if (status === 'drone_attack') {
-                attackSource.addFeature(clone);
-            } else if (status === 'drone_danger') {
-                dangerSource.addFeature(clone);
-            } else {
-                clearSource.addFeature(clone);
-            }
+            if (status === 'missile_alert') missileSource.addFeature(clone);
+            else if (status === 'drone_attack') attackSource.addFeature(clone);
+            else if (status === 'drone_danger') dangerSource.addFeature(clone);
+            else clearSource.addFeature(clone);
         }
         map.render();
     }
@@ -591,21 +558,16 @@
             else if (status === 'drone_danger') danger.push(name);
         }
         attack.sort(); danger.sort();
-        
         const dateTimeStr = getFullDateForSummary();
-        
-        let html = '';
-        html += `<div class="summary-time">🕐 ${dateTimeStr}</div>`;
-        html += `<div class="threat-header">🔴 ТРЕВОГА (БПЛА/РАКЕТЫ)</div><div class="region-list-block">`;
+        let html = `<div class="summary-time">🕐 ${dateTimeStr}</div>`;
+        html += `<div class="threat-header">🔴 Тревога по (БПЛА/РАКЕТЫ)</div><div class="region-list-block">`;
         if (attack.length) attack.forEach(r => html += `<span class="region-line" data-region="${r}">• ${r}</span>`);
         else html += `<div class="empty-message">— нет угроз —</div>`;
-        html += `</div><div class="sub-header">🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ (БПЛА)</div><div class="region-list-block">`;
+        html += `</div><div class="sub-header">🟡 Опасность по бпла</div><div class="region-list-block">`;
         if (danger.length) danger.forEach(r => html += `<span class="region-line" data-region="${r}">• ${r}</span>`);
         else html += `<div class="empty-message">— нет угроз —</div>`;
         html += `</div>`;
-        
         document.getElementById('dynamicSummaryBlock').innerHTML = html;
-        
         document.querySelectorAll('.region-line').forEach(el => {
             el.addEventListener('click', (e) => {
                 const regionName = el.dataset.region;
@@ -625,12 +587,18 @@
         const dateTimeStr = getFullDateForSummary();
         let text = `✈️ Тревоги на территории РФ ${dateTimeStr}\n\n`;
         text += `🔴 АКТИВНАЯ ТРЕВОГА (БПЛА/Ракеты):\n`;
-        if (attack.length) attack.forEach(r => text += `  • ${r}\n`);
-        else text += ` — нет угроз —  \n\n`;
+        if (attack.length) {
+            attack.forEach(r => text += `  • ${r}\n`);
+            text += `\n`;
+        } else {
+            text += ` — нет угроз —  \n\n`;
+        }
         text += `🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ (БПЛА):\n`;
-        if (danger.length) danger.forEach(r => text += `  • ${r}\n`);
-        else text += ` — нет угроз — \n`;
-        
+        if (danger.length) {
+            danger.forEach(r => text += `  • ${r}\n`);
+        } else {
+            text += ` — нет угроз — \n`;
+        }
         navigator.clipboard.writeText(text);
         const btn = document.getElementById('copySummaryBtn');
         btn.textContent = '✅ Скопировано!';
@@ -648,10 +616,9 @@
     popupElement.appendChild(popupCloser);
     const popupContent = document.createElement('div');
     popupElement.appendChild(popupContent);
-    
     const popupOverlay = new ol.Overlay({ element: popupElement, autoPan: true, offset: [10, -10] });
     map.addOverlay(popupOverlay);
-    
+
     map.on('singleclick', (evt) => {
         let feature = null;
         const layers = [clearLayer, dangerLayer, attackLayer, missileLayer];
@@ -663,33 +630,37 @@
             const name = feature.get('name');
             const status = getRegionStatus(name);
             let html = `<div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; border-bottom: 1px solid #555;">${name}</div>`;
-            if (status === 'missile_alert') html += `<div style="color: #ff8888; font-weight: bold;"> РАКЕТНАЯ ОПАСНОСТЬ</div>`;
-            else if (status === 'drone_attack') html += `<div style="color: #ff8888; font-weight: bold;"> ТРЕВОГА БПЛА</div>`;
-            else if (status === 'drone_danger') html += `<div style="color: #ffcc88; font-weight: bold;"> ОПАСНОСТЬ ПО БПЛА</div>`;
-            else html += `<div style="color: #a0d0a0;"> ОТБОЙ</div>`;
+            let borderColor = '#888';
+            if (status === 'missile_alert') {
+                html += `<div style="color: #661122; font-weight: bold;"> РАКЕТНАЯ ОПАСНОСТЬ</div>`;
+                borderColor = '#cc3366';
+            } else if (status === 'drone_attack') {
+                html += `<div style="color: #662211; font-weight: bold;"> ТРЕВОГА БПЛА</div>`;
+                borderColor = '#cc5533';
+            } else if (status === 'drone_danger') {
+                html += `<div style="color: #665522; font-weight: bold;"> ОПАСНОСТЬ ПО БПЛА</div>`;
+                borderColor = '#ccaa44';
+            } else {
+                html += `<div style="color: #a0d0a0;"> ОТБОЙ</div>`;
+                borderColor = '#888';
+            }
             popupContent.innerHTML = html;
+            popupElement.style.borderLeftColor = borderColor;
             popupOverlay.setPosition(evt.coordinate);
         } else {
             popupOverlay.setPosition(undefined);
         }
     });
 
-    // Свёртывание легенды
+    // Свёртывание
     const legendHeader = document.getElementById('legendHeader');
     const legendItems = document.getElementById('legendItems');
     const legendToggle = document.getElementById('legendToggle');
     legendHeader.addEventListener('click', () => {
         const isCollapsed = legendItems.style.display === 'none';
-        if (isCollapsed) {
-            legendItems.style.display = 'flex';
-            legendToggle.innerHTML = '▼';
-        } else {
-            legendItems.style.display = 'none';
-            legendToggle.innerHTML = '▲';
-        }
+        legendItems.style.display = isCollapsed ? 'flex' : 'none';
+        legendToggle.innerHTML = isCollapsed ? '▼' : '▲';
     });
-
-    // Свёртывание сводки
     const summaryHeader = document.getElementById('summaryHeader');
     const summaryContent = document.getElementById('summaryContent');
     const summaryArrow = document.getElementById('summaryArrow');
