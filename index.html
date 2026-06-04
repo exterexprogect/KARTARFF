@@ -1,361 +1,278 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Карта опасностей РФ — @bplamap</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; background: #0a0a0a; }
+        body { font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #0a0a0a; }
         #map { width: 100vw; height: 100vh; background: #000; }
-
-        /* Часы */
         .orbit-clock {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 1100;
-            background: transparent;
-            font-family: 'Orbitron', monospace;
-            text-align: center;
-            pointer-events: none;
-            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            position: absolute; top: 20px; right: 20px; z-index: 1100;
+            background: transparent; font-family: 'Orbitron', monospace; text-align: center;
+            pointer-events: none; text-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
-        .orbit-time {
-            font-size: 36px;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: 3px;
-            line-height: 1;
-        }
-        .orbit-date {
-            font-size: 12px;
-            font-weight: 400;
-            color: #aaaaaa;
-            letter-spacing: 1px;
-            margin-top: 5px;
-        }
-
-        /* Основная панель */
+        .orbit-time { font-size: 36px; font-weight: 700; color: #fff; letter-spacing: 3px; }
+        .orbit-date { font-size: 12px; font-weight: 400; color: #aaa; margin-top: 5px; }
         .legend-summary-panel {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            width: 320px;
+            position: absolute; bottom: 20px; left: 20px; width: 320px;
             max-height: calc(100vh - 100px);
             background: linear-gradient(145deg, #2a2a2a 0%, #0f0f0f 100%);
-            backdrop-filter: blur(8px);
-            border-radius: 20px;
-            border: 1px solid rgba(80, 80, 100, 0.6);
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-            pointer-events: auto;
-            font-size: 12px;
+            backdrop-filter: blur(8px); border-radius: 20px;
+            border: 1px solid rgba(80,80,100,0.6); z-index: 1000;
+            display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6); font-size: 12px;
         }
-        .legend-header {
-            padding: 12px 18px;
-            font-weight: bold;
-            font-size: 13px;
-            color: #e0e0e0;
-            border-bottom: 1px solid rgba(100, 100, 120, 0.5);
-            background: rgba(20, 20, 25, 0.7);
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .legend-header, .summary-header {
+            padding: 12px 18px; font-weight: bold; font-size: 13px; color: #e0e0e0;
+            border-bottom: 1px solid rgba(100,100,120,0.5);
+            background: rgba(20,20,25,0.7); cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .legend-toggle {
-            font-size: 14px;
-            transition: transform 0.2s;
-            color: #bbbbbb;
-        }
+        .legend-toggle, .summary-arrow { font-size: 14px; transition: 0.2s; color: #bbb; }
         .legend-items {
-            padding: 12px 18px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            border-bottom: 1px solid rgba(100, 100, 120, 0.3);
-            background: rgba(0, 0, 0, 0.3);
+            padding: 12px 18px; display: flex; flex-direction: column; gap: 8px;
+            border-bottom: 1px solid rgba(100,100,120,0.3);
+            background: rgba(0,0,0,0.3);
         }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 12px;
-            color: #cdcdcd;
-        }
-        .color-box {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-        }
-        .color-clear { background: rgba(42, 42, 42, 0.8); border: 1px solid #777; }
+        .legend-item { display: flex; align-items: center; gap: 10px; color: #cdcdcd; }
+        .color-box { width: 20px; height: 20px; border-radius: 4px; }
+        .color-clear { background: rgba(42,42,42,0.8); border: 1px solid #777; }
         .color-danger { background: #cc9900; border: 1px solid #ffdd66; }
         .color-attack { background: #cc0000; border: 1px solid #ff6666; }
         .color-missile { background: #800020; border: 1px solid #ff8888; }
-
-        .summary-header {
-            padding: 12px 18px;
-            font-weight: bold;
-            font-size: 13px;
-            color: #e0e0e0;
-            border-bottom: 1px solid rgba(100, 100, 120, 0.5);
-            background: rgba(20, 20, 25, 0.7);
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .summary-arrow {
-            font-size: 14px;
-            transition: transform 0.2s;
-            color: #bbbbbb;
-        }
         .summary-content {
-            padding: 12px 16px;
-            overflow-y: auto;
-            max-height: 300px;
-            background: rgba(0, 0, 0, 0.4);
+            padding: 12px 16px; overflow-y: auto; max-height: 300px;
+            background: rgba(0,0,0,0.4);
         }
         .summary-content.collapsed { display: none; }
-        .summary-content::-webkit-scrollbar { width: 4px; }
-        .summary-content::-webkit-scrollbar-track { background: rgba(100,100,120,0.2); border-radius: 10px; }
-        .summary-content::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
         .summary-time {
-            font-size: 10px;
-            color: #bbbbbb;
-            text-align: center;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(120,120,140,0.4);
-            font-family: monospace;
+            font-size: 10px; color: #bbb; text-align: center; margin-bottom: 12px;
+            padding-bottom: 8px; border-bottom: 1px solid rgba(120,120,140,0.4);
         }
         .threat-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: bold;
-            font-size: 12px;
-            border-left: 3px solid #ff7795;
-            padding-left: 10px;
-            margin-bottom: 6px;
+            display: flex; align-items: center; gap: 8px; font-weight: bold;
+            border-left: 3px solid #ff7795; padding-left: 10px; margin-bottom: 6px;
             color: #ffccdd;
         }
         .sub-header {
-            font-size: 11px;
-            font-weight: 600;
-            color: #ddccaa;
-            margin: 8px 0 4px 0;
-            border-left: 3px solid #cc9900;
-            padding-left: 10px;
+            font-size: 11px; font-weight: 600; color: #ddccaa;
+            margin: 8px 0 4px 0; border-left: 3px solid #cc9900; padding-left: 10px;
         }
-        .region-list-block {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            margin-left: 16px;
-            margin-bottom: 12px;
-        }
+        .region-list-block { margin-left: 16px; margin-bottom: 12px; }
         .region-line {
-            font-size: 11px;
-            color: #d0d0e0;
-            display: block;
-            line-height: 1.35;
+            font-size: 11px; color: #d0d0e0; display: block; line-height: 1.35;
             cursor: pointer;
-            transition: 0.1s;
         }
         .region-line:hover { color: #fff; text-shadow: 0 0 3px #aaa; }
         .copy-btn {
-            background: rgba(60,60,80,0.6);
-            border: 1px solid rgba(120,120,150,0.7);
-            color: #e0e0e0;
-            padding: 6px 0;
-            border-radius: 40px;
-            text-align: center;
-            cursor: pointer;
-            font-size: 11px;
-            margin-top: 12px;
-            transition: 0.2s;
-            width: 100%;
+            background: rgba(60,60,80,0.6); border: 1px solid rgba(120,120,150,0.7);
+            color: #e0e0e0; padding: 6px 0; border-radius: 40px; text-align: center;
+            cursor: pointer; font-size: 11px; margin-top: 12px; width: 100%;
         }
         .copy-btn:hover { background: rgba(90,90,110,0.8); border-color: #aaa; color: white; }
         .empty-message { color: #aaa; font-style: italic; font-size: 11px; padding: 6px 0; }
-
-        /* Попап */
         .ol-popup {
-            background: rgba(20,20,28,0.96);
-            backdrop-filter: blur(16px);
-            border-radius: 16px;
-            border-left: 4px solid #888;
-            color: #f0f0f0;
-            padding: 12px;
-            min-width: 200px;
-            pointer-events: auto;
-            position: absolute;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            transition: border-left-color 0.1s ease;
+            background: rgba(20,20,28,0.96); backdrop-filter: blur(16px);
+            border-radius: 16px; border-left: 4px solid #888; padding: 12px;
+            min-width: 200px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
-        .popup-closer { float: right; font-size: 18px; color: #aaa; text-decoration: none; cursor: pointer; }
+        .popup-closer { float: right; font-size: 18px; color: #aaa; cursor: pointer; }
         .popup-closer:hover { color: white; }
     </style>
 </head>
 <body>
 <div id="map"></div>
-<div class="orbit-clock">
-    <div class="orbit-time" id="orbitTime">--:--</div>
-    <div class="orbit-date" id="orbitDate"></div>
-</div>
-<div class="legend-summary-panel" id="legendSummaryPanel">
-    <div class="legend-header" id="legendHeader">
-        <span>🚨 ТИПЫ УГРОЗ</span>
-        <span class="legend-toggle" id="legendToggle">▼</span>
-    </div>
+<div class="orbit-clock"><div class="orbit-time" id="orbitTime">--:--</div><div class="orbit-date" id="orbitDate"></div></div>
+<div class="legend-summary-panel">
+    <div class="legend-header" id="legendHeader"><span>🚨 ТИПЫ УГРОЗ</span><span class="legend-toggle" id="legendToggle">▼</span></div>
     <div class="legend-items" id="legendItems">
         <div class="legend-item"><div class="color-box color-clear"></div> Отбой</div>
-        <div class="legend-item"><div class="color-box color-danger"></div>Опасность по БПЛА</div>
-        <div class="legend-item"><div class="color-box color-attack"></div>Внимание по БПЛА</div>
-        <div class="legend-item"><div class="color-box color-missile"></div>Ракетная опасность</div>
+        <div class="legend-item"><div class="color-box color-danger"></div> Опасность по БПЛА</div>
+        <div class="legend-item"><div class="color-box color-attack"></div> Внимание по БПЛА</div>
+        <div class="legend-item"><div class="color-box color-missile"></div> Ракетная опасность</div>
     </div>
-    <div class="summary-header" id="summaryHeader">
-        <span>📜 СВОДКА УГРОЗ</span>
-        <span class="summary-arrow" id="summaryArrow">▼</span>
-    </div>
-    <div class="summary-content" id="summaryContent">
-        <div id="dynamicSummaryBlock"></div>
-        <div class="copy-btn" id="copySummaryBtn">📋 Копировать сводку</div>
-    </div>
+    <div class="summary-header" id="summaryHeader"><span>📜 СВОДКА УГРОЗ</span><span class="summary-arrow" id="summaryArrow">▼</span></div>
+    <div class="summary-content" id="summaryContent"><div id="dynamicSummaryBlock"></div><div class="copy-btn" id="copySummaryBtn">📋 Копировать сводку</div></div>
 </div>
 
 <script>
-    const API_URL = 'https://radar-u913.onrender.com/api/statuses';
+    // ======================== НАСТРОЙКИ ========================
+    const API_URL = 'https://radars-ghqn.onrender.com/api/statuses';
     const EXCLUDED_REGIONS = [
         "Донецкая Народная Республика", "Луганская Народная Республика",
-        "Запорожская область", "Херсонская область", "ДНР", "ЛНР", "крым", "Республика крым"
+        "Запорожская область", "Херсонская область", "ДНР", "ЛНР",
+        "Крым", "Республика Крым", "Севастополь", "крым", "республика крым"
     ];
 
-    const CITY_TO_REGION = {
-        "Москва": "Московская область", "МСК": "Московская область",
-        "Санкт-Петербург": "Ленинградская область", "СПБ": "Ленинградская область", "Питер": "Ленинградская область",
-        "Самара": "Самарская область", "Казань": "Республика Татарстан",
-        "Нижний Новгород": "Нижегородская область", "Н.Новгород": "Нижегородская область",
-        "Саратов": "Саратовская область", "Волгоград": "Волгоградская область",
-        "Ульяновск": "Ульяновская область", "Пенза": "Пензенская область",
-        "Тольятти": "Самарская область", "Набережные Челны": "Республика Татарстан",
-        "Ростов-на-Дону": "Ростовская область", "Краснодар": "Краснодарский край",
-        "Ставрополь": "Ставропольский край", "Воронеж": "Воронежская область",
-        "Астрахань": "Астраханская область", "Екатеринбург": "Свердловская область",
-        "Челябинск": "Челябинская область", "Уфа": "Республика Башкортостан",
-        "Пермь": "Пермский край", "Тюмень": "Тюменская область",
-        "Омск": "Омская область", "Новосибирск": "Новосибирская область",
-        "Красноярск": "Красноярский край", "Иркутск": "Иркутская область",
-        "Махачкала": "Республика Дагестан", "Грозный": "Чеченская Республика",
-        "Назрань": "Республика Ингушетия", "Владикавказ": "Республика Северная Осетия",
-        "Нальчик": "Кабардино-Балкарская Республика", "Черкесск": "Карачаево-Черкесская Республика",
-        "Майкоп": "Республика Адыгея", "Элиста": "Республика Калмыкия",
-        "Петрозаводск": "Республика Карелия", "Сыктывкар": "Республика Коми",
-        "Калининград": "Калининградская область", "Владивосток": "Приморский край",
-        "Хабаровск": "Хабаровский край", "Ижевск": "Республика Удмуртия",
-        "Чебоксары": "Чувашская Республика", "Саранск": "Республика Мордовия",
-        "Симферополь": "Республика Крым"
+    const _SHORT_NAMES = {
+        "Московская область": "Московская обл.", "Ленинградская область": "Ленинградская обл.",
+        "Нижегородская область": "Нижегородская обл.", "Ставропольский край": "Ставропольский край",
+        "Краснодарский край": "Краснодарский край", "Чеченская Республика": "Чеченская Респ.",
+        "Республика Дагестан": "Респ. Дагестан", "Республика Ингушетия": "Респ. Ингушетия",
+        "Республика Северная Осетия": "Респ. Сев. Осетия", "Карачаево-Черкесская Республика": "Карачаево-Черкесия",
+        "Кабардино-Балкарская Республика": "Кабардино-Балкария", "Республика Адыгея": "Респ. Адыгея",
+        "Астраханская область": "Астраханская обл.", "Волгоградская область": "Волгоградская обл.",
+        "Белгородская область": "Белгородская обл.", "Брянская область": "Брянская обл.",
+        "Воронежская область": "Воронежская обл.", "Курская область": "Курская обл.",
+        "Ростовская область": "Ростовская обл.", "Смоленская область": "Смоленская обл.",
+        "Тульская область": "Тульская обл.", "Калужская область": "Калужская обл.",
+        "Рязанская область": "Рязанская обл.", "Тверская область": "Тверская обл.",
+        "Ярославская область": "Ярославская обл.", "Владимирская область": "Владимирская обл.",
+        "Ивановская область": "Ивановская обл.", "Костромская область": "Костромская обл.",
+        "Тамбовская область": "Тамбовская обл.", "Липецкая область": "Липецкая обл.",
+        "Орловская область": "Орловская обл.", "Пензенская область": "Пензенская обл.",
+        "Саратовская область": "Саратовская обл.", "Ульяновская область": "Ульяновская обл.",
+        "Самарская область": "Самарская обл.", "Пермский край": "Пермский край",
+        "Республика Башкортостан": "Респ. Башкортостан", "Республика Татарстан": "Респ. Татарстан",
+        "Республика Удмуртия": "Респ. Удмуртия", "Республика Марий Эл": "Респ. Марий Эл",
+        "Республика Мордовия": "Респ. Мордовия", "Чувашская Республика": "Чувашская Респ.",
+        "Кировская область": "Кировская обл.", "Оренбургская область": "Оренбургская обл.",
+        "Челябинская область": "Челябинская обл.", "Свердловская область": "Свердловская обл.",
+        "Курганская область": "Курганская обл.", "Тюменская область": "Тюменская обл.",
+        "Омская область": "Омская обл.", "Новосибирская область": "Новосибирская обл.",
+        "Томская область": "Томская обл.", "Кемеровская область": "Кемеровская обл.",
+        "Алтайский край": "Алтайский край", "Красноярский край": "Красноярский край",
+        "Иркутская область": "Иркутская обл.", "Забайкальский край": "Забайкальский край",
+        "Республика Бурятия": "Респ. Бурятия", "Приморский край": "Приморский край",
+        "Хабаровский край": "Хабаровский край", "Амурская область": "Амурская обл.",
+        "Сахалинская область": "Сахалинская обл.", "Камчатский край": "Камчатский край",
+        "Магаданская область": "Магаданская обл.", "Республика Саха (Якутия)": "Респ. Саха (Якутия)",
+        "Еврейская АО": "Еврейская АО", "Чукотский АО": "Чукотский АО", "ЯНАО": "ЯНАО",
+        "Ханты-Мансийский АО": "ХМАО", "Ненецкий АО": "Ненецкий АО", "Республика Карелия": "Респ. Карелия",
+        "Республика Коми": "Респ. Коми", "Архангельская область": "Архангельская обл.",
+        "Мурманская область": "Мурманская обл.", "Вологодская область": "Вологодская обл.",
+        "Новгородская область": "Новгородская обл.", "Псковская область": "Псковская обл.",
+        "Калининградская область": "Калининградская обл.", "Республика Алтай": "Респ. Алтай",
+        "Республика Хакасия": "Респ. Хакасия", "Республика Тыва": "Респ. Тыва",
+        "Республика Калмыкия": "Респ. Калмыкия", "Москва": "Москва", "Санкт-Петербург": "Санкт-Петербург"
     };
 
-    const REGION_ALIASES = {
-        "Москва": "Московская область",
-        "Московская область": "Московская область",
-        "Московская обл.": "Московская область",
-        "Ленинградская обл.": "Ленинградская область",
-        "Нижегородская обл.": "Нижегородская область",
-        "Самарская обл.": "Самарская область",
-        "Саратовская обл.": "Саратовская область",
-        "Волгоградская обл.": "Волгоградская область",
-        "Ростовская обл.": "Ростовская область",
-        "Краснодарский край": "Краснодарский край",
-        "Ставропольский край": "Ставропольский край",
-        "Пермский край": "Пермский край",
-        "Хабаровский край": "Хабаровский край",
-        "Приморский край": "Приморский край",
-        "Красноярский край": "Красноярский край",
+    const _REGION_SYNONYMS = {
+        "Московская область": "Московская область", "Московский регион": "Московская область", "Подмосковье": "Московская область",
+        "Ленинградская область": "Ленинградская область", "Ленинградская обл.": "Ленинградская область",
+        "Нижегородская область": "Нижегородская область", "Нижний Новгород": "Нижегородская область",
+        "Тульская область": "Тульская область", "Тула": "Тульская область",
+        "Калужская область": "Калужская область", "Калуга": "Калужская область",
+        "Рязанская область": "Рязанская область", "Рязань": "Рязанская область",
+        "Тверская область": "Тверская область", "Тверь": "Тверская область",
+        "Воронежская область": "Воронежская область", "Воронеж": "Воронежская область",
+        "Белгородская область": "Белгородская область", "Белгород": "Белгородская область",
+        "Брянская область": "Брянская область", "Брянск": "Брянская область",
+        "Курская область": "Курская область", "Курск": "Курская область",
+        "Смоленская область": "Смоленская область", "Смоленск": "Смоленская область",
+        "Орловская область": "Орловская область", "Орёл": "Орловская область", "Орел": "Орловская область",
+        "Липецкая область": "Липецкая область", "Липецк": "Липецкая область",
+        "Тамбовская область": "Тамбовская область", "Тамбов": "Тамбовская область",
+        "Владимирская область": "Владимирская область", "Владимир": "Владимирская область",
+        "Ивановская область": "Ивановская область", "Иваново": "Ивановская область",
+        "Ярославская область": "Ярославская область", "Ярославль": "Ярославская область",
+        "Костромская область": "Костромская область", "Кострома": "Костромская область",
+        "Вологодская область": "Вологодская область", "Вологда": "Вологодская область",
+        "Новгородская область": "Новгородская область", "Псковская область": "Псковская область",
+        "Кировская область": "Кировская область", "Киров": "Кировская область",
+        "Пензенская область": "Пензенская область", "Пенза": "Пензенская область",
+        "Ульяновская область": "Ульяновская область", "Ульяновск": "Ульяновская область",
+        "Саратовская область": "Саратовская область", "Саратов": "Саратовская область",
+        "Самарская область": "Самарская область", "Самара": "Самарская область",
+        "Оренбургская область": "Оренбургская область",
+        "Челябинская область": "Челябинская область", "Челябинск": "Челябинская область",
+        "Свердловская область": "Свердловская область", "Екатеринбург": "Свердловская область",
+        "Курганская область": "Курганская область",
+        "Тюменская область": "Тюменская область",
+        "Омская область": "Омская область",
+        "Томская область": "Томская область",
+        "Новосибирская область": "Новосибирская область",
+        "Кемеровская область": "Кемеровская область",
+        "Иркутская область": "Иркутская область",
+        "Амурская область": "Амурская область",
+        "Сахалинская область": "Сахалинская область",
+        "Магаданская область": "Магаданская область",
+        "Мурманская область": "Мурманская область",
+        "Архангельская область": "Архангельская область",
+        "Астраханская область": "Астраханская область", "Астрахань": "Астраханская область",
+        "Волгоградская область": "Волгоградская область", "Волгоград": "Волгоградская область",
+        "Ростовская область": "Ростовская область", "Ростов-на-Дону": "Ростовская область",
+        "Калининградская область": "Калининградская область",
+        "Краснодарский край": "Краснодарский край", "Краснодар": "Краснодарский край",
+        "Ставропольский край": "Ставропольский край", "Ставрополь": "Ставропольский край",
+        "Пермский край": "Пермский край", "Пермь": "Пермский край",
         "Алтайский край": "Алтайский край",
-        // Республики (GeoJSON -> полное имя из API)
-        "Татарстан": "Республика Татарстан",
-        "Башкортостан": "Республика Башкортостан",
-        "Удмуртия": "Республика Удмуртия",
-        "Марий Эл": "Республика Марий Эл",
-        "Чувашия": "Чувашская Республика",
-        "Мордовия": "Республика Мордовия",
-        "Карелия": "Республика Карелия",
-        "Коми": "Республика Коми",
-        "Дагестан": "Республика Дагестан",
-        "Ингушетия": "Республика Ингушетия",
-        "Северная Осетия": "Республика Северная Осетия",
-        "Кабардино-Балкария": "Кабардино-Балкарская Республика",
-        "Карачаево-Черкесия": "Карачаево-Черкесская Республика",
-        "Адыгея": "Республика Адыгея",
-        "Калмыкия": "Республика Калмыкия",
-        "Крым": "Республика Крым",
-        "Чечня": "Чеченская Республика",
-        "Алтай": "Республика Алтай",
-        "Тыва": "Республика Тыва",
-        "Хакасия": "Республика Хакасия",
-        // Дополнительно, если придут другие варианты
-        "Республика Татарстан": "Республика Татарстан",
-        "Республика Башкортостан": "Республика Башкортостан",
-        "Республика Удмуртия": "Республика Удмуртия",
-        "Республика Марий Эл": "Республика Марий Эл",
-        "Чувашская Республика": "Чувашская Республика",
-        "Республика Мордовия": "Республика Мордовия",
-        "Республика Карелия": "Республика Карелия",
-        "Республика Коми": "Республика Коми",
-        "Республика Дагестан": "Республика Дагестан",
-        "Республика Ингушетия": "Республика Ингушетия",
-        "Республика Северная Осетия": "Республика Северная Осетия",
-        "Кабардино-Балкарская Республика": "Кабардино-Балкарская Республика",
-        "Карачаево-Черкесская Республика": "Карачаево-Черкесская Республика",
-        "Республика Адыгея": "Республика Адыгея",
-        "Республика Калмыкия": "Республика Калмыкия",
-        "Республика Крым": "Республика Крым",
-        "Чеченская Республика": "Чеченская Республика",
-        "Республика Алтай": "Республика Алтай",
-        "Республика Тыва": "Республика Тыва",
-        "Республика Хакасия": "Республика Хакасия"
+        "Красноярский край": "Красноярский край",
+        "Забайкальский край": "Забайкальский край",
+        "Приморский край": "Приморский край",
+        "Хабаровский край": "Хабаровский край",
+        "Камчатский край": "Камчатский край",
+        "Республика Адыгея": "Республика Адыгея", "Адыгея": "Республика Адыгея",
+        "Республика Алтай": "Республика Алтай", "Алтай": "Республика Алтай",
+        "Республика Башкортостан": "Республика Башкортостан", "Башкортостан": "Республика Башкортостан",
+        "Республика Бурятия": "Республика Бурятия", "Бурятия": "Республика Бурятия",
+        "Республика Дагестан": "Республика Дагестан", "Дагестан": "Республика Дагестан",
+        "Республика Ингушетия": "Республика Ингушетия", "Ингушетия": "Республика Ингушетия",
+        "Кабардино-Балкарская Республика": "Кабардино-Балкарская Республика", "Кабардино-Балкария": "Кабардино-Балкарская Республика",
+        "Республика Калмыкия": "Республика Калмыкия", "Калмыкия": "Республика Калмыкия",
+        "Карачаево-Черкесская Республика": "Карачаево-Черкесская Республика", "Карачаево-Черкесия": "Карачаево-Черкесская Республика",
+        "Республика Карелия": "Республика Карелия", "Карелия": "Республика Карелия",
+        "Республика Коми": "Республика Коми", "Коми": "Республика Коми",
+        "Республика Марий Эл": "Республика Марий Эл", "Марий Эл": "Республика Марий Эл",
+        "Республика Мордовия": "Республика Мордовия", "Мордовия": "Республика Мордовия",
+        "Республика Саха (Якутия)": "Республика Саха (Якутия)", "Якутия": "Республика Саха (Якутия)",
+        "Республика Северная Осетия-Алания": "Республика Северная Осетия", "Северная Осетия": "Республика Северная Осетия",
+        "Республика Северная Осетия": "Республика Северная Осетия", "Северная Осетия - Алания": "Республика Северная Осетия",
+        "Республика Татарстан": "Республика Татарстан", "Татарстан": "Республика Татарстан",
+        "Республика Тыва": "Республика Тыва", "Тыва": "Республика Тыва",
+        "Республика Удмуртия": "Республика Удмуртия", "Удмуртия": "Республика Удмуртия", "Удмуртская Республика": "Республика Удмуртия",
+        "Республика Хакасия": "Республика Хакасия", "Хакасия": "Республика Хакасия",
+        "Чеченская Республика": "Чеченская Республика", "Чечня": "Чеченская Республика",
+        "Чувашская Республика": "Чувашская Республика", "Чувашия": "Чувашская Республика",
+        "Москва": "Москва", "г. Москва": "Москва",
+        "Санкт-Петербург": "Санкт-Петербург", "г. Санкт-Петербург": "Санкт-Петербург", "Питер": "Санкт-Петербург"
     };
 
     function normalizeRegionName(inputName) {
         if (!inputName) return inputName;
-        // Сначала города
-        if (CITY_TO_REGION[inputName]) {
-            let mapped = CITY_TO_REGION[inputName];
-            return REGION_ALIASES[mapped] || mapped;
+        let name = inputName.trim();
+        if (_REGION_SYNONYMS[name]) return _REGION_SYNONYMS[name];
+        let lower = name.toLowerCase();
+        for (let [key, value] of Object.entries(_REGION_SYNONYMS)) {
+            if (key.toLowerCase() === lower) return value;
         }
-        // Прямой алиас
-        if (REGION_ALIASES[inputName]) return REGION_ALIASES[inputName];
-        // Убираем лишние пробелы
-        return inputName.trim();
+        if (lower.includes("удмурт")) return "Республика Удмуртия";
+        if (lower.includes("осетия")) return "Республика Северная Осетия";
+        if (name.startsWith("Республика ")) {
+            let without = name.replace("Республика ", "");
+            if (_REGION_SYNONYMS[without]) return _REGION_SYNONYMS[without];
+        }
+        if (name.endsWith(" Республика")) {
+            let without = name.replace(" Республика", "");
+            if (_REGION_SYNONYMS[without]) return _REGION_SYNONYMS[without];
+        }
+        return name;
+    }
+
+    function getShortName(canonical) {
+        return _SHORT_NAMES[canonical] || canonical;
     }
 
     function getCurrentTimeParts() {
         const now = new Date();
         const msk = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
-        const hours = msk.getHours().toString().padStart(2, '0');
-        const minutes = msk.getMinutes().toString().padStart(2, '0');
-        const day = msk.getDate().toString().padStart(2, '0');
-        const month = (msk.getMonth() + 1).toString().padStart(2, '0');
-        const monthName = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'][msk.getMonth()];
+        const hours = msk.getHours().toString().padStart(2,'0');
+        const minutes = msk.getMinutes().toString().padStart(2,'0');
+        const day = msk.getDate().toString().padStart(2,'0');
+        const month = (msk.getMonth()+1).toString().padStart(2,'0');
+        const monthName = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'][msk.getMonth()];
         const year = msk.getFullYear();
         return { time: `${hours}:${minutes}`, day, month, monthName, year };
     }
-
     function getFullDateForSummary() {
         const { time, day, month } = getCurrentTimeParts();
         return `${time} | ${day}.${month}`;
     }
-
     function getFullDateForClock() {
         const { day, monthName, year } = getCurrentTimeParts();
         return `${day} ${monthName} ${year}`;
@@ -363,30 +280,30 @@
 
     let regionStatuses = new Map();
     function getRegionStatus(regionName) {
-        const canonical = normalizeRegionName(regionName);
-        return regionStatuses.get(canonical) || 'clear';
+        const canon = normalizeRegionName(regionName);
+        return regionStatuses.get(canon) || 'clear';
     }
 
     async function fetchAlerts() {
         try {
             const resp = await fetch(API_URL);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            const apiData = await resp.json();
-            if (apiData && apiData.regions) {
+            const data = await resp.json();
+            if (data && data.regions) {
                 regionStatuses.clear();
-                for (const [regionName, info] of Object.entries(apiData.regions)) {
-                    if (EXCLUDED_REGIONS.some(ex => regionName.includes(ex))) continue;
-                    let status = info.status || 'clear';
-                    const canonical = normalizeRegionName(regionName);
-                    regionStatuses.set(canonical, status);
+                for (const [name, info] of Object.entries(data.regions)) {
+                    if (EXCLUDED_REGIONS.some(ex => name.toLowerCase().includes(ex.toLowerCase()))) continue;
+                    const status = info.status || 'clear';
+                    const canon = normalizeRegionName(name);
+                    regionStatuses.set(canon, status);
                 }
                 updateAllLayers();
                 renderFullSummary();
             }
-        } catch (err) { console.error('Ошибка API:', err); }
+        } catch(e) { console.error('API error:', e); }
     }
 
-    // ========== КАРТА ==========
+    // КАРТА
     const map = new ol.Map({
         target: 'map',
         layers: [new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', subdomains: 'abcd' }) })],
@@ -399,10 +316,10 @@
     let attackSource = new ol.source.Vector();
     let missileSource = new ol.source.Vector();
 
-    const clearLayer = new ol.layer.Vector({ source: clearSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(42, 42, 42, 0.6)' }), stroke: new ol.style.Stroke({ color: '#555555', width: 1 }) }), zIndex: 5 });
-    const dangerLayer = new ol.layer.Vector({ source: dangerSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(204, 153, 0, 0.65)' }), stroke: new ol.style.Stroke({ color: '#cc9900', width: 2 }) }), zIndex: 6 });
-    const attackLayer = new ol.layer.Vector({ source: attackSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(204, 0, 0, 0.7)' }), stroke: new ol.style.Stroke({ color: '#cc0000', width: 2 }) }), zIndex: 7 });
-    const missileLayer = new ol.layer.Vector({ source: missileSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(128, 0, 32, 0.75)' }), stroke: new ol.style.Stroke({ color: '#800020', width: 2.2 }) }), zIndex: 8 });
+    const clearLayer = new ol.layer.Vector({ source: clearSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(42,42,42,0.6)' }), stroke: new ol.style.Stroke({ color: '#555', width: 1 }) }), zIndex: 5 });
+    const dangerLayer = new ol.layer.Vector({ source: dangerSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(204,153,0,0.65)' }), stroke: new ol.style.Stroke({ color: '#cc9900', width: 2 }) }), zIndex: 6 });
+    const attackLayer = new ol.layer.Vector({ source: attackSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(204,0,0,0.7)' }), stroke: new ol.style.Stroke({ color: '#cc0000', width: 2 }) }), zIndex: 7 });
+    const missileLayer = new ol.layer.Vector({ source: missileSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(128,0,32,0.75)' }), stroke: new ol.style.Stroke({ color: '#800020', width: 2.2 }) }), zIndex: 8 });
 
     map.addLayer(clearLayer);
     map.addLayer(dangerLayer);
@@ -416,44 +333,20 @@
             const zoom = map.getView().getZoom();
             let name = feature.get('name');
             if (!name || zoom < 3) return new ol.style.Style();
-            function splitName(n) {
-                if (n === "Москва") return ["Москва"];
-                if (n.includes('Республика')) {
-                    const parts = n.split(' ');
-                    if (parts.length >= 2) return [parts[0], parts.slice(1).join(' ')];
-                }
-                if (n.includes('область')) {
-                    const parts = n.split(' ');
-                    if (parts.length >= 2) return [parts[0], parts.slice(1).join(' ')];
-                }
-                if (n.includes('край')) {
-                    const parts = n.split(' ');
-                    if (parts.length >= 2) {
-                        if (n === "Краснодарский край") return ["Краснодарский", "край"];
-                        if (n === "Ставропольский край") return ["Ставропольский", "край"];
-                        return [parts[0], parts.slice(1).join(' ')];
-                    }
-                }
-                const spaceIndex = n.indexOf(' ');
-                if (spaceIndex > 0 && n.length - spaceIndex < 25) {
-                    return [n.substring(0, spaceIndex), n.substring(spaceIndex + 1)];
-                }
-                return [n];
-            }
-            const lines = splitName(name);
+            const short = getShortName(name);
+            const lines = short.split(' ').length > 1 ? short.split(' ') : [short];
             const fontSize = zoom < 5 ? '10px' : '12px';
             return new ol.style.Style({
                 text: new ol.style.Text({
                     text: lines.join('\n'),
                     font: `500 ${fontSize} "Segoe UI"`,
-                    fill: new ol.style.Fill({ color: '#ffffff' }),
-                    stroke: new ol.style.Stroke({ color: '#000000', width: 2.5 }),
+                    fill: new ol.style.Fill({ color: '#fff' }),
+                    stroke: new ol.style.Stroke({ color: '#000', width: 2.5 }),
                     textAlign: 'center'
                 })
             });
         },
-        zIndex: 20,
-        declutter: true
+        zIndex: 20, declutter: true
     });
     map.addLayer(labelLayer);
 
@@ -464,69 +357,52 @@
         .then(geojson => {
             const format = new ol.format.GeoJSON();
             const features = format.readFeatures(geojson, { featureProjection: 'EPSG:3857' });
-            let moscowRegionFeatures = [];
-            features.forEach(feature => {
-                let name = feature.get('name');
+            let moscowFeatures = [];
+            features.forEach(f => {
+                let name = f.get('name');
                 if (!name) return;
-                if (EXCLUDED_REGIONS.some(ex => name.includes(ex))) return;
-                const normalized = normalizeRegionName(name);
-                feature.set('name', normalized);
-                if (normalized === "Московская область") {
-                    moscowRegionFeatures.push(feature);
-                    return;
-                }
-                if (normalized === "Москва") {
-                    allFeaturesMap.set("Москва", feature);
-                    return;
-                }
-                if (allFeaturesMap.has(normalized)) {
-                    const existingFeature = allFeaturesMap.get(normalized);
-                    const existingGeom = existingFeature.getGeometry();
-                    const newGeom = feature.getGeometry();
-                    const collection = new ol.geom.GeometryCollection([existingGeom, newGeom]);
-                    existingFeature.setGeometry(collection);
+                if (EXCLUDED_REGIONS.some(ex => name.toLowerCase().includes(ex.toLowerCase()))) return;
+                const canon = normalizeRegionName(name);
+                f.set('name', canon);
+                if (canon === "Московская область") { moscowFeatures.push(f); return; }
+                if (canon === "Москва") { allFeaturesMap.set("Москва", f); return; }
+                if (allFeaturesMap.has(canon)) {
+                    const existing = allFeaturesMap.get(canon);
+                    const coll = new ol.geom.GeometryCollection([existing.getGeometry(), f.getGeometry()]);
+                    existing.setGeometry(coll);
                 } else {
-                    allFeaturesMap.set(normalized, feature);
+                    allFeaturesMap.set(canon, f);
                 }
             });
-            if (moscowRegionFeatures.length > 0) {
-                const geoms = moscowRegionFeatures.map(f => f.getGeometry());
-                const collection = new ol.geom.GeometryCollection(geoms);
-                const mergedFeature = moscowRegionFeatures[0].clone();
-                mergedFeature.setGeometry(collection);
-                mergedFeature.set('name', "Московская область");
-                allFeaturesMap.set("Московская область", mergedFeature);
+            if (moscowFeatures.length) {
+                const coll = new ol.geom.GeometryCollection(moscowFeatures.map(f => f.getGeometry()));
+                const merged = moscowFeatures[0].clone();
+                merged.setGeometry(coll);
+                merged.set('name', "Московская область");
+                allFeaturesMap.set("Московская область", merged);
             }
-            for (let [name, feature] of allFeaturesMap) {
-                const geom = feature.getGeometry();
-                let centerPoint = null;
-                if (geom.getType() === 'MultiPolygon') {
+            for (let [name, feat] of allFeaturesMap) {
+                const geom = feat.getGeometry();
+                let center = null;
+                if (geom.getType() === 'Polygon') center = geom.getInteriorPoint();
+                else if (geom.getType() === 'MultiPolygon') {
                     let maxArea = 0, largest;
                     if (geom.getPolygons) {
-                        geom.getPolygons().forEach(p => { const area = p.getArea(); if (area > maxArea) { maxArea = area; largest = p; } });
-                        if (largest) centerPoint = largest.getInteriorPoint();
+                        geom.getPolygons().forEach(p => { let a = p.getArea(); if (a > maxArea) { maxArea = a; largest = p; } });
+                        if (largest) center = largest.getInteriorPoint();
                     }
-                } else if (geom.getType() === 'Polygon') {
-                    centerPoint = geom.getInteriorPoint();
                 } else if (geom.getType() === 'GeometryCollection') {
-                    const geometries = geom.getGeometries();
-                    for (let g of geometries) {
-                        if (g.getType() === 'Polygon') {
-                            centerPoint = g.getInteriorPoint();
-                            break;
-                        } else if (g.getType() === 'MultiPolygon' && g.getPolygons) {
-                            const polys = g.getPolygons();
-                            if (polys.length > 0) {
-                                centerPoint = polys[0].getInteriorPoint();
-                                break;
-                            }
+                    for (let g of geom.getGeometries()) {
+                        if (g.getType() === 'Polygon') { center = g.getInteriorPoint(); break; }
+                        if (g.getType() === 'MultiPolygon' && g.getPolygons && g.getPolygons().length) {
+                            center = g.getPolygons()[0].getInteriorPoint(); break;
                         }
                     }
                 }
-                if (centerPoint && !labelSource.getFeatures().some(f => f.get('name') === name)) {
-                    const labelFeature = new ol.Feature(centerPoint);
-                    labelFeature.set('name', name);
-                    labelSource.addFeature(labelFeature);
+                if (center && !labelSource.getFeatures().some(f => f.get('name') === name)) {
+                    let label = new ol.Feature(center);
+                    label.set('name', name);
+                    labelSource.addFeature(label);
                 }
             }
             updateAllLayers();
@@ -534,13 +410,10 @@
         }).catch(console.error);
 
     function updateAllLayers() {
-        clearSource.clear();
-        dangerSource.clear();
-        attackSource.clear();
-        missileSource.clear();
-        for (let [name, feature] of allFeaturesMap) {
+        clearSource.clear(); dangerSource.clear(); attackSource.clear(); missileSource.clear();
+        for (let [name, feat] of allFeaturesMap) {
             const status = getRegionStatus(name);
-            const clone = feature.clone();
+            const clone = feat.clone();
             clone.set('name', name);
             if (status === 'missile_alert') missileSource.addFeature(clone);
             else if (status === 'drone_attack') attackSource.addFeature(clone);
@@ -552,140 +425,139 @@
 
     function renderFullSummary() {
         let attack = [], danger = [];
-        for (let [name, status] of regionStatuses.entries()) {
-            if (EXCLUDED_REGIONS.some(ex => name.includes(ex) || ex.includes(name))) continue;
-            if (status === 'missile_alert' || status === 'drone_attack') attack.push(name);
-            else if (status === 'drone_danger') danger.push(name);
+        for (let [canon, status] of regionStatuses) {
+            if (EXCLUDED_REGIONS.some(ex => canon.toLowerCase().includes(ex.toLowerCase()))) continue;
+            if (status === 'missile_alert' || status === 'drone_attack') attack.push(canon);
+            else if (status === 'drone_danger') danger.push(canon);
         }
         attack.sort(); danger.sort();
-        const dateTimeStr = getFullDateForSummary();
-        let html = `<div class="summary-time">🕐 ${dateTimeStr}</div>`;
-        html += `<div class="threat-header">🔴 Тревога по (БПЛА/РАКЕТЫ)</div><div class="region-list-block">`;
-        if (attack.length) attack.forEach(r => html += `<span class="region-line" data-region="${r}">• ${r}</span>`);
+        const dt = getFullDateForSummary();
+        let html = `<div class="summary-time">🕐 ${dt}</div>`;
+        html += `<div class="threat-header">🔴 ТРЕВОГА (БПЛА/РАКЕТЫ)</div><div class="region-list-block">`;
+        if (attack.length) attack.forEach(r => html += `<span class="region-line" data-region="${r}">• ${getShortName(r)}</span>`);
         else html += `<div class="empty-message">— нет угроз —</div>`;
-        html += `</div><div class="sub-header">🟡 Опасность по бпла</div><div class="region-list-block">`;
-        if (danger.length) danger.forEach(r => html += `<span class="region-line" data-region="${r}">• ${r}</span>`);
+        html += `</div><div class="sub-header">🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ (БПЛА)</div><div class="region-list-block">`;
+        if (danger.length) danger.forEach(r => html += `<span class="region-line" data-region="${r}">• ${getShortName(r)}</span>`);
         else html += `<div class="empty-message">— нет угроз —</div>`;
         html += `</div>`;
         document.getElementById('dynamicSummaryBlock').innerHTML = html;
         document.querySelectorAll('.region-line').forEach(el => {
-            el.addEventListener('click', (e) => {
-                const regionName = el.dataset.region;
-                const feature = allFeaturesMap.get(regionName);
-                if (feature) map.getView().fit(feature.getGeometry().getExtent(), { padding: [50,50,50,50], maxZoom: 8 });
+            el.addEventListener('click', () => {
+                const r = el.dataset.region;
+                const f = allFeaturesMap.get(r);
+                if (f) map.getView().fit(f.getGeometry().getExtent(), { padding: [50,50,50,50], maxZoom: 8 });
             });
         });
     }
 
     document.getElementById('copySummaryBtn').addEventListener('click', () => {
         let attack = [], danger = [];
-        for (let [name, status] of regionStatuses.entries()) {
-            if (EXCLUDED_REGIONS.some(ex => name.includes(ex) || ex.includes(name))) continue;
-            if (status === 'missile_alert' || status === 'drone_attack') attack.push(name);
-            else if (status === 'drone_danger') danger.push(name);
+        for (let [canon, status] of regionStatuses) {
+            if (EXCLUDED_REGIONS.some(ex => canon.toLowerCase().includes(ex.toLowerCase()))) continue;
+            if (status === 'missile_alert' || status === 'drone_attack') attack.push(canon);
+            else if (status === 'drone_danger') danger.push(canon);
         }
-        const dateTimeStr = getFullDateForSummary();
-        let text = `✈️ Тревоги на территории РФ ${dateTimeStr}\n\n`;
+        const dt = getFullDateForSummary();
+        let text = `✈️ Тревоги на территории РФ ${dt}\n\n`;
         text += `🔴 АКТИВНАЯ ТРЕВОГА (БПЛА/Ракеты):\n`;
-        if (attack.length) {
-            attack.forEach(r => text += `  • ${r}\n`);
-            text += `\n`;
-        } else {
-            text += ` — нет угроз —  \n\n`;
-        }
+        if (attack.length) { attack.forEach(r => text += `  • ${getShortName(r)}\n`); text += `\n`; }
+        else text += ` — нет угроз —  \n\n`;
         text += `🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ (БПЛА):\n`;
-        if (danger.length) {
-            danger.forEach(r => text += `  • ${r}\n`);
-        } else {
-            text += ` — нет угроз — \n`;
-        }
+        if (danger.length) danger.forEach(r => text += `  • ${getShortName(r)}\n`);
+        else text += ` — нет угроз — \n`;
         navigator.clipboard.writeText(text);
         const btn = document.getElementById('copySummaryBtn');
         btn.textContent = '✅ Скопировано!';
         setTimeout(() => btn.textContent = '📋 Копировать сводку', 1500);
     });
 
-    // Попап
-    const popupElement = document.createElement('div');
-    popupElement.className = 'ol-popup';
-    const popupCloser = document.createElement('a');
-    popupCloser.href = '#';
-    popupCloser.className = 'popup-closer';
-    popupCloser.innerHTML = '×';
-    popupCloser.onclick = () => { popupOverlay.setPosition(undefined); return false; };
-    popupElement.appendChild(popupCloser);
+    // ПОПАП: название региона всегда белое, тип угрозы цветной (как палочка)
+    const popupElem = document.createElement('div');
+    popupElem.className = 'ol-popup';
+    const closer = document.createElement('a');
+    closer.href = '#';
+    closer.className = 'popup-closer';
+    closer.innerHTML = '×';
+    closer.onclick = () => { popupOverlay.setPosition(undefined); return false; };
+    popupElem.appendChild(closer);
     const popupContent = document.createElement('div');
-    popupElement.appendChild(popupContent);
-    const popupOverlay = new ol.Overlay({ element: popupElement, autoPan: true, offset: [10, -10] });
+    popupElem.appendChild(popupContent);
+    const popupOverlay = new ol.Overlay({ element: popupElem, autoPan: true, offset: [10, -10] });
     map.addOverlay(popupOverlay);
 
     map.on('singleclick', (evt) => {
         let feature = null;
         const layers = [clearLayer, dangerLayer, attackLayer, missileLayer];
         for (const layer of layers) {
-            map.forEachFeatureAtPixel(evt.pixel, (f) => { feature = f; return true; }, { layerFilter: (l) => l === layer });
+            map.forEachFeatureAtPixel(evt.pixel, (f) => { feature = f; return true; }, { layerFilter: l => l === layer });
             if (feature) break;
         }
         if (feature) {
-            const name = feature.get('name');
-            const status = getRegionStatus(name);
-            let html = `<div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; border-bottom: 1px solid #555;">${name}</div>`;
+            const canon = feature.get('name');
+            const status = getRegionStatus(canon);
+            const display = getShortName(canon);
+            // Название региона — белым, жирным
+            let html = `<div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; border-bottom: 1px solid #555; color: #ffffff;">${display}</div>`;
             let borderColor = '#888';
+            let textColor = '#aaa';
             if (status === 'missile_alert') {
-                html += `<div style="color: #661122; font-weight: bold;"> РАКЕТНАЯ ОПАСНОСТЬ</div>`;
-                borderColor = '#661122';
+                textColor = '#cc3366';
+                borderColor = '#cc3366';
+                html += `<div style="color: ${textColor}; font-weight: bold;"> РАКЕТНАЯ ОПАСНОСТЬ</div>`;
             } else if (status === 'drone_attack') {
-                html += `<div style="color: #cc5533; font-weight: bold;"> ТРЕВОГА ПО БПЛА</div>`;
+                textColor = '#cc5533';
                 borderColor = '#cc5533';
+                html += `<div style="color: ${textColor}; font-weight: bold;"> ТРЕВОГА БПЛА</div>`;
             } else if (status === 'drone_danger') {
-                html += `<div style="color: #ccaa44; font-weight: bold;"> ОПАСНОСТЬ ПО БПЛА</div>`;
+                textColor = '#ccaa44';
                 borderColor = '#ccaa44';
+                html += `<div style="color: ${textColor}; font-weight: bold;"> ОПАСНОСТЬ ПО БПЛА</div>`;
             } else {
-                html += `<div style="color: #a0d0a0;"> ОТБОЙ</div>`;
-                borderColor = '#a0d0a0';
+                textColor = '#a0d0a0';
+                borderColor = '#aaa';
+                html += `<div style="color: ${textColor};"> ОТБОЙ</div>`;
             }
             popupContent.innerHTML = html;
-            popupElement.style.borderLeftColor = borderColor;
+            popupElem.style.borderLeftColor = borderColor;
             popupOverlay.setPosition(evt.coordinate);
         } else {
             popupOverlay.setPosition(undefined);
         }
     });
 
-    // Свёртывание
-    const legendHeader = document.getElementById('legendHeader');
-    const legendItems = document.getElementById('legendItems');
-    const legendToggle = document.getElementById('legendToggle');
-    legendHeader.addEventListener('click', () => {
-        const isCollapsed = legendItems.style.display === 'none';
-        legendItems.style.display = isCollapsed ? 'flex' : 'none';
-        legendToggle.innerHTML = isCollapsed ? '▼' : '▲';
+    // Сворачивание
+    document.getElementById('legendHeader').addEventListener('click', () => {
+        const items = document.getElementById('legendItems');
+        const toggle = document.getElementById('legendToggle');
+        const isCollapsed = items.style.display === 'none';
+        items.style.display = isCollapsed ? 'flex' : 'none';
+        toggle.innerHTML = isCollapsed ? '▼' : '▲';
     });
-    const summaryHeader = document.getElementById('summaryHeader');
-    const summaryContent = document.getElementById('summaryContent');
-    const summaryArrow = document.getElementById('summaryArrow');
-    summaryHeader.addEventListener('click', () => {
-        const isCollapsed = summaryContent.classList.contains('collapsed');
+    document.getElementById('summaryHeader').addEventListener('click', () => {
+        const content = document.getElementById('summaryContent');
+        const arrow = document.getElementById('summaryArrow');
+        const isCollapsed = content.classList.contains('collapsed');
         if (isCollapsed) {
-            summaryContent.classList.remove('collapsed');
-            summaryArrow.innerHTML = '▼';
+            content.classList.remove('collapsed');
+            arrow.innerHTML = '▼';
         } else {
-            summaryContent.classList.add('collapsed');
-            summaryArrow.innerHTML = '▲';
+            content.classList.add('collapsed');
+            arrow.innerHTML = '▲';
         }
     });
 
-    function updateOrbitClock() {
+    function updateClock() {
         const { time } = getCurrentTimeParts();
-        const dateStr = getFullDateForClock();
-        document.getElementById('orbitTime').innerHTML = time;
-        document.getElementById('orbitDate').innerHTML = dateStr;
+        document.getElementById('orbitTime').textContent = time;
+        document.getElementById('orbitDate').textContent = getFullDateForClock();
     }
-    updateOrbitClock();
-    setInterval(updateOrbitClock, 1000);
+    updateClock();
+    setInterval(updateClock, 1000);
 
     fetchAlerts();
     setInterval(fetchAlerts, 15000);
 </script>
+</body>
+</html>
 </body>
 </html>
