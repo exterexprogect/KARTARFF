@@ -102,7 +102,6 @@
 
 <script>
     // ======================== ПРЕДОСТАВЛЕННЫЕ ДАННЫЕ РЕГИОНОВ ========================
-    // Словарь 22 (родительные падежи → полное название)
     const data22 = {
         "костромской":"Костромская область","кировской":"Кировская область","московской":"Московская область",
         "ленинградской":"Ленинградская область","нижегородской":"Нижегородская область","тульской":"Тульская область",
@@ -122,7 +121,6 @@
         "ростовской":"Ростовская область","запорожской":"Запорожская область","херсонской":"Херсонская область"
     };
 
-    // Словарь _23 (синонимы → каноническое название)
     const data23 = {
         "Московская область":"Московская область","Московский регион":"Московская область","Подмосковье":"Московская область",
         "Москва":"Москва","г. Москва":"Москва",
@@ -163,31 +161,10 @@
         "Губаха":"Пермский край"
     };
 
-    // Множество _24 (города/регионы — не используется напрямую, но оставляем для справки)
-    const data24 = new Set([
-        "Москва", "Тула", "Калуга", "Рязань", "Тверь", "Воронеж", "Белгород",
-        "Брянск", "Курск", "Смоленск", "Орёл", "Орел", "Липецк", "Тамбов",
-        "Владимир", "Иваново", "Ярославль", "Кострома", "Вологда", "Псков",
-        "Киров", "Пенза", "Ульяновск", "Саратов", "Пермь", "Ставрополь",
-        "Краснодар", "Волгоград", "Астрахань", "Севастополь", "Симферополь",
-        "Грозный", "Махачкала", "Каспийск", "Владикавказ", "Челябинск",
-        "Екатеринбург", "Крым", "Адыгея", "Татарстан", "Чувашия", "Мордовия",
-        "Башкортостан", "Невинномысск", "Анапа", "Сочи", "Новороссийск",
-        "Дагестан", "Марий Эл", "Иваново", "Тверь",
-        "Московский регион", "Подмосковье", "Нижний Новгород", "Санкт-Петербург",
-        "Причерноморье", "Побережье Крыма", "Крымский мост", "Приморско-Ахтарск",
-        "г. Москва", "г. Санкт-Петербург", "г.Пермь"
-    ]);
-
-    // ======================== ОСНОВНОЙ СЛОВАРЬ СИНОНИМОВ ========================
-    // Объединяем предоставленные данные с ручными корректировками
     const _REGION_SYNONYMS = (() => {
         const base = {};
-        // Добавляем все из data23
         for (const [key, val] of Object.entries(data23)) base[key] = val;
-        // Добавляем все из data22 (родительные падежи)
         for (const [key, val] of Object.entries(data22)) base[key] = val;
-        // Добавляем недостающие синонимы из оригинального кода (если не перекрыты)
         const extra = {
             "Ленинградская обл.": "Ленинградская область", "Нижегородская обл.": "Нижегородская область",
             "Тульская обл.": "Тульская область", "Калужская обл.": "Калужская область", "Рязанская обл.": "Рязанская область",
@@ -210,7 +187,6 @@
         return base;
     })();
 
-    // Короткие названия для отображения на карте
     const _SHORT_NAMES = {
         "Московская область": "Московская обл.", "Ленинградская область": "Ленинградская обл.",
         "Нижегородская область": "Нижегородская обл.", "Ставропольский край": "Ставропольский край",
@@ -260,8 +236,20 @@
         "Крым", "Республика Крым", "Севастополь"
     ];
 
-    // === НОВЫЙ АДРЕС СЕРВЕРА ===
     const API_URL = 'https://radar-u913.onrender.com/api/statuses?api_key=aa07b7a6f91a71d1d6c77803c93b2ba0d4cd080ade0ce6147e9ff420482bec79';
+
+    // ======================== МАППИНГ СТАТУСОВ ========================
+    function mapStatusToCategory(status) {
+        if (!status || status === 'clear') return 'clear';
+        const lowerStatus = status.toLowerCase();
+        if (lowerStatus.includes('missile') || lowerStatus.includes('rocket') || 
+            lowerStatus === 'ballistic_alert' || lowerStatus === 'rocket_alert') {
+            return 'missile';
+        }
+        if (lowerStatus === 'drone_attack' || lowerStatus === 'uav_attack') return 'attack';
+        if (lowerStatus === 'drone_danger' || lowerStatus === 'uav_danger') return 'danger';
+        return 'clear';
+    }
 
     function normalizeRegionName(inputName) {
         if (!inputName) return inputName;
@@ -271,7 +259,6 @@
         for (let [key, value] of Object.entries(_REGION_SYNONYMS)) {
             if (key.toLowerCase() === lower) return value;
         }
-        // Дополнительные эвристики
         if (lower.includes("удмурт")) return "Республика Удмуртия";
         if (lower.includes("осетия")) return "Республика Северная Осетия";
         if (name.startsWith("Республика ")) {
@@ -310,10 +297,10 @@
         return `${day} ${monthName} ${year}`;
     }
 
-    let regionStatuses = new Map();
-    function getRegionStatus(regionName) {
+    let regionCategories = new Map(); // 'missile', 'attack', 'danger', 'clear'
+    function getRegionCategory(regionName) {
         const canon = normalizeRegionName(regionName);
-        return regionStatuses.get(canon) || 'clear';
+        return regionCategories.get(canon) || 'clear';
     }
 
     async function fetchAlerts() {
@@ -321,16 +308,21 @@
             const resp = await fetch(API_URL);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
+            console.log('API response:', data);
             if (data && data.regions) {
-                regionStatuses.clear();
                 for (const [name, info] of Object.entries(data.regions)) {
                     if (EXCLUDED_REGIONS.some(ex => name.toLowerCase().includes(ex.toLowerCase()))) continue;
-                    const status = info.status || 'clear';
+                    const rawStatus = info.status || 'clear';
+                    const category = mapStatusToCategory(rawStatus);
                     const canon = normalizeRegionName(name);
-                    regionStatuses.set(canon, status);
+                    if (regionCategories.get(canon) !== category) {
+                        regionCategories.set(canon, category);
+                    }
                 }
                 updateAllLayers();
                 renderFullSummary();
+            } else {
+                console.warn('API response has no "regions" field');
             }
         } catch(e) { console.error('API error:', e); }
     }
@@ -444,29 +436,31 @@
     function updateAllLayers() {
         clearSource.clear(); dangerSource.clear(); attackSource.clear(); missileSource.clear();
         for (let [name, feat] of allFeaturesMap) {
-            const status = getRegionStatus(name);
+            const category = getRegionCategory(name);
             const clone = feat.clone();
             clone.set('name', name);
-            if (status === 'missile_alert') missileSource.addFeature(clone);
-            else if (status === 'drone_attack') attackSource.addFeature(clone);
-            else if (status === 'drone_danger') dangerSource.addFeature(clone);
+            if (category === 'missile') missileSource.addFeature(clone);
+            else if (category === 'attack') attackSource.addFeature(clone);
+            else if (category === 'danger') dangerSource.addFeature(clone);
             else clearSource.addFeature(clone);
         }
         map.render();
     }
 
+    // СВОДКА (совмещённая: missile + attack в один блок)
     function renderFullSummary() {
-        let attack = [], danger = [];
-        for (let [canon, status] of regionStatuses) {
+        let active = [];   // missile + attack
+        let danger = [];
+        for (let [canon, category] of regionCategories) {
             if (EXCLUDED_REGIONS.some(ex => canon.toLowerCase().includes(ex.toLowerCase()))) continue;
-            if (status === 'missile_alert' || status === 'drone_attack') attack.push(canon);
-            else if (status === 'drone_danger') danger.push(canon);
+            if (category === 'missile' || category === 'attack') active.push(canon);
+            else if (category === 'danger') danger.push(canon);
         }
-        attack.sort(); danger.sort();
+        active.sort(); danger.sort();
         const dt = getFullDateForSummary();
         let html = `<div class="summary-time">🕐 ${dt}</div>`;
         html += `<div class="threat-header">🔴 ТРЕВОГА (БПЛА/РАКЕТЫ)</div><div class="region-list-block">`;
-        if (attack.length) attack.forEach(r => html += `<span class="region-line" data-region="${r}">• ${getShortName(r)}</span>`);
+        if (active.length) active.forEach(r => html += `<span class="region-line" data-region="${r}">• ${getShortName(r)}</span>`);
         else html += `<div class="empty-message">— нет угроз —</div>`;
         html += `</div><div class="sub-header">🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ (БПЛА)</div><div class="region-list-block">`;
         if (danger.length) danger.forEach(r => html += `<span class="region-line" data-region="${r}">• ${getShortName(r)}</span>`);
@@ -483,16 +477,16 @@
     }
 
     document.getElementById('copySummaryBtn').addEventListener('click', () => {
-        let attack = [], danger = [];
-        for (let [canon, status] of regionStatuses) {
+        let active = [], danger = [];
+        for (let [canon, category] of regionCategories) {
             if (EXCLUDED_REGIONS.some(ex => canon.toLowerCase().includes(ex.toLowerCase()))) continue;
-            if (status === 'missile_alert' || status === 'drone_attack') attack.push(canon);
-            else if (status === 'drone_danger') danger.push(canon);
+            if (category === 'missile' || category === 'attack') active.push(canon);
+            else if (category === 'danger') danger.push(canon);
         }
         const dt = getFullDateForSummary();
         let text = `✈️ Тревоги на территории РФ ${dt}\n\n`;
         text += `🔴 АКТИВНАЯ ТРЕВОГА (БПЛА/Ракеты):\n`;
-        if (attack.length) { attack.forEach(r => text += `  • ${getShortName(r)}\n`); text += `\n`; }
+        if (active.length) { active.forEach(r => text += `  • ${getShortName(r)}\n`); text += `\n`; }
         else text += ` — нет угроз —  \n\n`;
         text += `🟡 ПОТЕНЦИАЛЬНАЯ ОПАСНОСТЬ (БПЛА):\n`;
         if (danger.length) danger.forEach(r => text += `  • ${getShortName(r)}\n`);
@@ -526,20 +520,20 @@
         }
         if (feature) {
             const canon = feature.get('name');
-            const status = getRegionStatus(canon);
+            const category = getRegionCategory(canon);
             const display = getShortName(canon);
             let html = `<div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; border-bottom: 1px solid #555; color: #ffffff;">${display}</div>`;
             let borderColor = '#888';
             let textColor = '#aaa';
-            if (status === 'missile_alert') {
+            if (category === 'missile') {
                 textColor = '#cc3366';
                 borderColor = '#cc3366';
                 html += `<div style="color: ${textColor}; font-weight: bold;"> РАКЕТНАЯ ОПАСНОСТЬ</div>`;
-            } else if (status === 'drone_attack') {
+            } else if (category === 'attack') {
                 textColor = '#cc5533';
                 borderColor = '#cc5533';
                 html += `<div style="color: ${textColor}; font-weight: bold;"> ТРЕВОГА БПЛА</div>`;
-            } else if (status === 'drone_danger') {
+            } else if (category === 'danger') {
                 textColor = '#ccaa44';
                 borderColor = '#ccaa44';
                 html += `<div style="color: ${textColor}; font-weight: bold;"> ОПАСНОСТЬ ПО БПЛА</div>`;
@@ -589,4 +583,5 @@
     setInterval(fetchAlerts, 15000);
 </script>
 </body>
+</html>
 </html>
