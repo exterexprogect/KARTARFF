@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Карта опасностей РФ — @bp</title>
+    <title>Карта опасностей РФ — @bp (без моргания)</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js"></script>
@@ -101,7 +101,9 @@
 </div>
 
 <script>
-    // ======================== ПРЕДОСТАВЛЕННЫЕ ДАННЫЕ РЕГИОНОВ ========================
+    // ============================================================
+    // 1. СЛОВАРИ СИНОНИМОВ (родительные падежи, сокращения)
+    // ============================================================
     const data22 = {
         "костромской":"Костромская область","кировской":"Кировская область","московской":"Московская область",
         "ленинградской":"Ленинградская область","нижегородской":"Нижегородская область","тульской":"Тульская область",
@@ -238,7 +240,9 @@
 
     const API_URL = 'https://burmalda227.pythonanywhere.com/api/alerts';
 
-    // ======================== МАППИНГ СТАТУСОВ ========================
+    // ============================================================
+    // 2. МАППИНГ СТАТУСОВ
+    // ============================================================
     function mapStatusToCategory(status) {
         if (!status || status === 'clear') return 'clear';
         const lowerStatus = status.toLowerCase();
@@ -247,7 +251,7 @@
             return 'missile';
         }
         if (lowerStatus === 'drone_attack' || lowerStatus === 'uav_attack') return 'attack';
-        if (lowerStatus === 'drone_danger' || lowerStatus === 'uav_danger') return 'danger';
+        if (lowerStatus === 'drone_danger' || lowerStatus === 'uav_danger' || lowerStatus.includes('drone')) return 'danger';
         return 'clear';
     }
 
@@ -258,6 +262,22 @@
         let lower = name.toLowerCase();
         for (let [key, value] of Object.entries(_REGION_SYNONYMS)) {
             if (key.toLowerCase() === lower) return value;
+        }
+        // убираем окончания родительного падежа
+        if (lower.endsWith('ской')) {
+            let base = lower.slice(0, -4);
+            for (let [key, value] of Object.entries(_REGION_SYNONYMS)) {
+                if (key.toLowerCase().includes(base)) return value;
+            }
+        }
+        const suffixes = [' область', ' край', ' республика', ' ао', ' автономный округ'];
+        for (let suffix of suffixes) {
+            if (lower.endsWith(suffix)) {
+                let base = lower.slice(0, -suffix.length);
+                for (let [key, value] of Object.entries(_REGION_SYNONYMS)) {
+                    if (key.toLowerCase().includes(base)) return value;
+                }
+            }
         }
         if (lower.includes("удмурт")) return "Республика Удмуртия";
         if (lower.includes("осетия")) return "Республика Северная Осетия";
@@ -297,11 +317,10 @@
         return `${day} ${monthName} ${year}`;
     }
 
-    let regionCategories = new Map(); // 'missile', 'attack', 'danger', 'clear'
-    function getRegionCategory(regionName) {
-        const canon = normalizeRegionName(regionName);
-        return regionCategories.get(canon) || 'clear';
-    }
+    // ============================================================
+    // 3. ОБНОВЛЕНИЕ ДАННЫХ ИЗ API
+    // ============================================================
+    let regionCategories = new Map();
 
     async function fetchAlerts() {
         try {
@@ -309,25 +328,62 @@
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
             console.log('API response:', data);
-            if (data && data.regions) {
-                for (const [name, info] of Object.entries(data.regions)) {
-                    if (EXCLUDED_REGIONS.some(ex => name.toLowerCase().includes(ex.toLowerCase()))) continue;
-                    const rawStatus = info.status || 'clear';
-                    const category = mapStatusToCategory(rawStatus);
-                    const canon = normalizeRegionName(name);
-                    if (regionCategories.get(canon) !== category) {
-                        regionCategories.set(canon, category);
+
+            let regionsData = data;
+            if (data && data.regions) regionsData = data.regions;
+            else if (data && data.data) regionsData = data.data;
+
+            if (Array.isArray(regionsData)) {
+                const newObj = {};
+                regionsData.forEach(item => {
+                    if (item.name) {
+                        newObj[item.name] = { type: item.status || 'clear' };
                     }
+                });
+                regionsData = newObj;
+            }
+
+            if (typeof regionsData === 'object' && regionsData !== null) {
+                // Очищаем старые категории, чтобы удалить уже неактуальные статусы
+                regionCategories.clear();
+                for (const [regionKey, info] of Object.entries(regionsData)) {
+                    if (EXCLUDED_REGIONS.some(ex => regionKey.toLowerCase().includes(ex.toLowerCase()))) continue;
+                    const status = info.type || info.status || 'clear';
+                    const category = mapStatusToCategory(status);
+                    const canon = normalizeRegionName(regionKey);
+                    console.log(`Mapping ${regionKey} -> ${canon}, category ${category}`);
+                    regionCategories.set(canon, category);
                 }
-                updateAllLayers();
+                console.log('regionCategories keys:', Array.from(regionCategories.keys()));
+                // Обновляем атрибуты существующих фич
+                const features = regionSource.getFeatures();
+                console.log(`Found ${features.length} features to update`);
+                features.forEach(f => {
+                    const regionName = f.get('name');
+                    let category = regionCategories.get(regionName);
+                    if (!category) {
+                        // частичное совпадение
+                        for (let [key, val] of regionCategories) {
+                            if (key.includes(regionName) || regionName.includes(key)) {
+                                category = val;
+                                console.log(`Partial match: ${regionName} -> ${key} (${val})`);
+                                break;
+                            }
+                        }
+                    }
+                    if (!category) category = 'clear';
+                    f.set('threatCategory', category);
+                });
                 renderFullSummary();
             } else {
-                console.warn('API response has no "regions" field');
+                console.warn('API response does not contain regions');
             }
         } catch(e) { console.error('API error:', e); }
     }
 
-    // КАРТА
+    // ============================================================
+    // 4. КАРТА
+    // ============================================================
     const map = new ol.Map({
         target: 'map',
         layers: [new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', subdomains: 'abcd' }) })],
@@ -335,122 +391,147 @@
         controls: []
     });
 
-    let clearSource = new ol.source.Vector();
-    let dangerSource = new ol.source.Vector();
-    let attackSource = new ol.source.Vector();
-    let missileSource = new ol.source.Vector();
+    // Единый источник для всех регионов (без пересоздания)
+    const regionSource = new ol.source.Vector();
+    const regionLayer = new ol.layer.Vector({
+        source: regionSource,
+        style: (feature) => {
+            const category = feature.get('threatCategory') || 'clear';
+            let fillColor, strokeColor;
+            switch (category) {
+                case 'missile':
+                    fillColor = 'rgba(128,0,32,0.75)';
+                    strokeColor = '#800020';
+                    break;
+                case 'attack':
+                    fillColor = 'rgba(204,0,0,0.7)';
+                    strokeColor = '#cc0000';
+                    break;
+                case 'danger':
+                    fillColor = 'rgba(204,153,0,0.65)';
+                    strokeColor = '#cc9900';
+                    break;
+                default:
+                    fillColor = 'rgba(42,42,42,0.6)';
+                    strokeColor = '#555';
+            }
+            return new ol.style.Style({
+                fill: new ol.style.Fill({ color: fillColor }),
+                stroke: new ol.style.Stroke({ color: strokeColor, width: category === 'clear' ? 1 : 2 })
+            });
+        },
+        zIndex: 10
+    });
+    map.addLayer(regionLayer);
 
-    const clearLayer = new ol.layer.Vector({ source: clearSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(42,42,42,0.6)' }), stroke: new ol.style.Stroke({ color: '#555', width: 1 }) }), zIndex: 5 });
-    const dangerLayer = new ol.layer.Vector({ source: dangerSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(204,153,0,0.65)' }), stroke: new ol.style.Stroke({ color: '#cc9900', width: 2 }) }), zIndex: 6 });
-    const attackLayer = new ol.layer.Vector({ source: attackSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(204,0,0,0.7)' }), stroke: new ol.style.Stroke({ color: '#cc0000', width: 2 }) }), zIndex: 7 });
-    const missileLayer = new ol.layer.Vector({ source: missileSource, style: new ol.style.Style({ fill: new ol.style.Fill({ color: 'rgba(128,0,32,0.75)' }), stroke: new ol.style.Stroke({ color: '#800020', width: 2.2 }) }), zIndex: 8 });
-
-    map.addLayer(clearLayer);
-    map.addLayer(dangerLayer);
-    map.addLayer(attackLayer);
-    map.addLayer(missileLayer);
-
+    // Слой для подписей – СТАТИЧНЫЙ РАЗМЕР ШРИФТА (не зависит от зума)
     const labelSource = new ol.source.Vector();
     const labelLayer = new ol.layer.Vector({
         source: labelSource,
         style: (feature) => {
-            const zoom = map.getView().getZoom();
             let name = feature.get('name');
-            if (!name || zoom < 3) return new ol.style.Style();
+            if (!name) return new ol.style.Style();
             const short = getShortName(name);
-            const lines = short.split(' ').length > 1 ? short.split(' ') : [short];
-            const fontSize = zoom < 5 ? '10px' : '12px';
+            const words = short.split(' ');
+            let lines = [];
+            if (words.length > 2) {
+                const mid = Math.ceil(words.length / 2);
+                lines = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
+            } else {
+                lines = [short];
+            }
             return new ol.style.Style({
                 text: new ol.style.Text({
                     text: lines.join('\n'),
-                    font: `500 ${fontSize} "Segoe UI"`,
+                    font: '500 11px "Segoe UI"',
                     fill: new ol.style.Fill({ color: '#fff' }),
                     stroke: new ol.style.Stroke({ color: '#000', width: 2.5 }),
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    textBaseline: 'middle'
                 })
             });
         },
-        zIndex: 20, declutter: true
+        zIndex: 20,
+        declutter: true
     });
     map.addLayer(labelLayer);
 
-    let allFeaturesMap = new Map();
+    // ============================================================
+    // 5. ЗАГРУЗКА GEOJSON
+    // ============================================================
+    async function fetchGeoJSON(url) {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        return resp.json();
+    }
 
-    fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/russia.geojson')
-        .then(r => r.json())
-        .then(geojson => {
-            const format = new ol.format.GeoJSON();
-            const features = format.readFeatures(geojson, { featureProjection: 'EPSG:3857' });
-            let moscowFeatures = [];
-            features.forEach(f => {
+    async function loadAllGeoJSON() {
+        const format = new ol.format.GeoJSON();
+        const tempMap = new Map();
+        try {
+            const mainData = await fetchGeoJSON('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/russia.geojson');
+            const mainFeatures = format.readFeatures(mainData, { featureProjection: 'EPSG:3857' });
+            mainFeatures.forEach(f => {
                 let name = f.get('name');
                 if (!name) return;
                 if (EXCLUDED_REGIONS.some(ex => name.toLowerCase().includes(ex.toLowerCase()))) return;
                 const canon = normalizeRegionName(name);
                 f.set('name', canon);
-                if (canon === "Московская область") { moscowFeatures.push(f); return; }
-                if (canon === "Москва") { allFeaturesMap.set("Москва", f); return; }
-                if (allFeaturesMap.has(canon)) {
-                    const existing = allFeaturesMap.get(canon);
+                if (tempMap.has(canon)) {
+                    const existing = tempMap.get(canon);
                     const coll = new ol.geom.GeometryCollection([existing.getGeometry(), f.getGeometry()]);
                     existing.setGeometry(coll);
                 } else {
-                    allFeaturesMap.set(canon, f);
+                    tempMap.set(canon, f);
                 }
             });
-            if (moscowFeatures.length) {
-                const coll = new ol.geom.GeometryCollection(moscowFeatures.map(f => f.getGeometry()));
-                const merged = moscowFeatures[0].clone();
-                merged.setGeometry(coll);
-                merged.set('name', "Московская область");
-                allFeaturesMap.set("Московская область", merged);
-            }
-            for (let [name, feat] of allFeaturesMap) {
-                const geom = feat.getGeometry();
-                let center = null;
-                if (geom.getType() === 'Polygon') center = geom.getInteriorPoint();
-                else if (geom.getType() === 'MultiPolygon') {
-                    let maxArea = 0, largest;
-                    if (geom.getPolygons) {
-                        geom.getPolygons().forEach(p => { let a = p.getArea(); if (a > maxArea) { maxArea = a; largest = p; } });
-                        if (largest) center = largest.getInteriorPoint();
-                    }
-                } else if (geom.getType() === 'GeometryCollection') {
-                    for (let g of geom.getGeometries()) {
-                        if (g.getType() === 'Polygon') { center = g.getInteriorPoint(); break; }
-                        if (g.getType() === 'MultiPolygon' && g.getPolygons && g.getPolygons().length) {
-                            center = g.getPolygons()[0].getInteriorPoint(); break;
-                        }
-                    }
-                }
-                if (center && !labelSource.getFeatures().some(f => f.get('name') === name)) {
-                    let label = new ol.Feature(center);
-                    label.set('name', name);
-                    labelSource.addFeature(label);
-                }
-            }
-            updateAllLayers();
-            renderFullSummary();
-        }).catch(console.error);
-
-    function updateAllLayers() {
-        clearSource.clear(); dangerSource.clear(); attackSource.clear(); missileSource.clear();
-        for (let [name, feat] of allFeaturesMap) {
-            const category = getRegionCategory(name);
-            const clone = feat.clone();
-            clone.set('name', name);
-            if (category === 'missile') missileSource.addFeature(clone);
-            else if (category === 'attack') attackSource.addFeature(clone);
-            else if (category === 'danger') dangerSource.addFeature(clone);
-            else clearSource.addFeature(clone);
+        } catch (e) {
+            console.warn('Failed to load main Russia GeoJSON:', e);
         }
-        map.render();
+
+        // Добавляем все фичи в общий источник
+        const allFeatures = Array.from(tempMap.values());
+        allFeatures.forEach(feat => {
+            const regionName = feat.get('name');
+            const initialCategory = regionCategories.get(regionName) || 'clear';
+            feat.set('threatCategory', initialCategory);
+            regionSource.addFeature(feat);
+
+            // Подпись
+            const geom = feat.getGeometry();
+            let center = null;
+            if (geom.getType() === 'Polygon') center = geom.getInteriorPoint();
+            else if (geom.getType() === 'MultiPolygon') {
+                let maxArea = 0, largest;
+                if (geom.getPolygons) {
+                    geom.getPolygons().forEach(p => { let a = p.getArea(); if (a > maxArea) { maxArea = a; largest = p; } });
+                    if (largest) center = largest.getInteriorPoint();
+                }
+            } else if (geom.getType() === 'GeometryCollection') {
+                for (let g of geom.getGeometries()) {
+                    if (g.getType() === 'Polygon') { center = g.getInteriorPoint(); break; }
+                    if (g.getType() === 'MultiPolygon' && g.getPolygons && g.getPolygons().length) {
+                        center = g.getPolygons()[0].getInteriorPoint(); break;
+                    }
+                }
+            }
+            if (center && !labelSource.getFeatures().some(l => l.get('name') === regionName)) {
+                let label = new ol.Feature(center);
+                label.set('name', regionName);
+                labelSource.addFeature(label);
+            }
+        });
+
+        renderFullSummary();
     }
 
-    // СВОДКА (совмещённая: missile + attack в один блок)
+    loadAllGeoJSON();
+
+    // ============================================================
+    // 6. СВОДКА
+    // ============================================================
     function renderFullSummary() {
-        let active = [];   // missile + attack
-        let danger = [];
+        let active = [], danger = [];
         for (let [canon, category] of regionCategories) {
             if (EXCLUDED_REGIONS.some(ex => canon.toLowerCase().includes(ex.toLowerCase()))) continue;
             if (category === 'missile' || category === 'attack') active.push(canon);
@@ -470,7 +551,7 @@
         document.querySelectorAll('.region-line').forEach(el => {
             el.addEventListener('click', () => {
                 const r = el.dataset.region;
-                const f = allFeaturesMap.get(r);
+                const f = regionSource.getFeatures().find(f => f.get('name') === r);
                 if (f) map.getView().fit(f.getGeometry().getExtent(), { padding: [50,50,50,50], maxZoom: 8 });
             });
         });
@@ -497,7 +578,9 @@
         setTimeout(() => btn.textContent = '📋 Копировать сводку', 1500);
     });
 
-    // ПОПАП
+    // ============================================================
+    // 7. ПОПАП
+    // ============================================================
     const popupElem = document.createElement('div');
     popupElem.className = 'ol-popup';
     const closer = document.createElement('a');
@@ -513,14 +596,10 @@
 
     map.on('singleclick', (evt) => {
         let feature = null;
-        const layers = [clearLayer, dangerLayer, attackLayer, missileLayer];
-        for (const layer of layers) {
-            map.forEachFeatureAtPixel(evt.pixel, (f) => { feature = f; return true; }, { layerFilter: l => l === layer });
-            if (feature) break;
-        }
+        map.forEachFeatureAtPixel(evt.pixel, (f) => { feature = f; return true; }, { layerFilter: l => l === regionLayer });
         if (feature) {
             const canon = feature.get('name');
-            const category = getRegionCategory(canon);
+            const category = feature.get('threatCategory') || 'clear';
             const display = getShortName(canon);
             let html = `<div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; border-bottom: 1px solid #555; color: #ffffff;">${display}</div>`;
             let borderColor = '#888';
@@ -550,7 +629,9 @@
         }
     });
 
-    // Сворачивание панелей
+    // ============================================================
+    // 8. УПРАВЛЕНИЕ ПАНЕЛЯМИ, ЧАСЫ, АВТОЗАГРУЗКА
+    // ============================================================
     document.getElementById('legendHeader').addEventListener('click', () => {
         const items = document.getElementById('legendItems');
         const toggle = document.getElementById('legendToggle');
@@ -579,9 +660,9 @@
     updateClock();
     setInterval(updateClock, 1000);
 
-    fetchAlerts();
+    // Даём время на загрузку GeoJSON, затем запрашиваем данные
+    setTimeout(fetchAlerts, 1000);
     setInterval(fetchAlerts, 15000);
 </script>
 </body>
-</html>
 </html>
